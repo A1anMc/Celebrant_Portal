@@ -12,7 +12,14 @@ from services.gmail_service import GmailService
 # Initialize Flask app
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-key-please-change')
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///celebrant.db')
+
+# Use DATABASE_URL for production database, fallback to SQLite for development
+database_url = os.environ.get('DATABASE_URL')
+if database_url and database_url.startswith('postgres://'):
+    # Heroku provides DATABASE_URL starting with 'postgres://', but SQLAlchemy requires 'postgresql://'
+    database_url = database_url.replace('postgres://', 'postgresql://', 1)
+
+app.config['SQLALCHEMY_DATABASE_URI'] = database_url or 'sqlite:///celebrant.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # Initialize extensions
@@ -289,4 +296,5 @@ def scan_emails():
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
-    app.run(debug=True) 
+    # Only use debug mode in development
+    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)), debug=False) 
