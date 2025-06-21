@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+
+{% block title %}Couples - Marriage Celebrant Portal{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1 class="h3">Couples</h1>
+    </div>
+    <div class="col text-end">
+        <a href="{{ url_for('couple_new') }}" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> New Couple
+        </a>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Couple</th>
+                        <th>Contact</th>
+                        <th>Ceremony Date</th>
+                        <th>Location</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for couple in couples %}
+                    <tr>
+                        <td>
+                            <a href="{{ url_for('couple_view', id=couple.id) }}" class="text-decoration-none">
+                                {{ couple.partner1_name }} & {{ couple.partner2_name }}
+                            </a>
+                        </td>
+                        <td>
+                            <small class="d-block text-muted">{{ couple.partner1_email }}</small>
+                            <small class="d-block text-muted">{{ couple.partner2_email }}</small>
+                        </td>
+                        <td>{{ couple.ceremony_date.strftime('%d %b %Y') if couple.ceremony_date else 'TBD' }}</td>
+                        <td>{{ couple.ceremony_location or 'TBD' }}</td>
+                        <td>
+                            <span class="badge bg-{{ 'success' if couple.status == 'Confirmed' 
+                                else 'warning' if couple.status == 'Inquiry' 
+                                else 'info' if couple.status == 'Completed'
+                                else 'danger' }}">
+                                {{ couple.status }}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="btn-group">
+                                <a href="{{ url_for('couple_view', id=couple.id) }}" class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                <a href="{{ url_for('couple_edit', id=couple.id) }}" class="btn btn-sm btn-outline-secondary">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <button type="button" class="btn btn-sm btn-outline-danger" 
+                                        onclick="confirmDelete('{{ couple.id }}', '{{ couple.partner1_name }} & {{ couple.partner2_name }}')">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="text-center text-muted py-4">
+                            No couples found. <a href="{{ url_for('couple_new') }}">Add your first couple</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirm Deletion</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                Are you sure you want to delete the couple "<span id="coupleName"></span>"?
+                This action cannot be undone.
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form id="deleteForm" method="POST">
+                    <button type="submit" class="btn btn-danger">Delete</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function confirmDelete(coupleId, coupleName) {
+    document.getElementById('coupleName').textContent = coupleName;
+    document.getElementById('deleteForm').action = `/couples/${coupleId}/delete`;
+    new bootstrap.Modal(document.getElementById('deleteModal')).show();
+}
+</script>
+{% endblock %} 
