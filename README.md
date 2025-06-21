@@ -1,71 +1,51 @@
-# Media Project Documentation Framework
+# A Melbourne Celebrant Dashboard
 
-A comprehensive guide for structuring and documenting media projects, with a focus on impact, audience engagement, and measurable outcomes.
+A comprehensive marriage celebrant management system with Gmail integration for efficient couple and ceremony management.
+
+## Features
+
+- User Authentication
+- Couple Management
+- Ceremony Templates
+- Document Management
+- Gmail Integration for Email Scanning
+- Timeline Tracking
 
 ## Quick Start
-**New to this documentation?** Check out our [Sharing Guide](SHARING.md) for instructions on how to download, view, and share these documents with your team.
 
-## Table of Contents
+1. Install dependencies:
+```bash
+pip install -r requirements.txt
+```
+
+2. Set up Gmail API:
+- Go to Google Cloud Console
+- Create a project and enable Gmail API
+- Download credentials.json
+- Place it in the application root directory
+
+3. Run the application:
+```bash
+python app.py
+```
+
+## Documentation
+
+For detailed documentation on project structure and features, see:
 
 1. [Project Foundation](docs/01-project-foundation.md)
-   - Problem Statement
-   - Vision & Mission
-   - Value Proposition
-
-2. [Audience & Market Analysis](docs/02-audience-market.md)
-   - Target Audience Definition
-   - Competitor Research
-   - Market Positioning
-
+2. [Basic Logic](docs/02-basic-logic.md)
 3. [Strategic Planning](docs/03-strategic-planning.md)
-   - Goals & Objectives
-   - OKRs (Objectives & Key Results)
-   - Success Metrics
-
-4. [Project Visualizations](docs/04-visualizations.md)
-   - Framework Overview
-   - Audience Analysis Flow
-   - Strategic Goals Flow
-   - Project Timeline
-   - Value Proposition Canvas
-
-## Purpose
-
-This documentation framework provides a structured approach to planning and documenting media projects. It helps teams:
-
-- Define clear project objectives and success metrics
-- Understand and connect with target audiences
-- Align creative vision with strategic goals
-- Track and measure project impact
-- Ensure cultural sensitivity and representation
-
-## How to Use This Guide
-
-Each section builds upon the previous ones to create a comprehensive project document. The framework includes:
-
-- Templates and examples
-- Best practices
-- Key considerations
-- Practical worksheets
-- Measurement frameworks
-- Visual diagrams and flowcharts
-
-## Sharing and Collaboration
-
-For instructions on how to share this documentation with your team and collaborate effectively, please refer to our [Sharing Guide](SHARING.md). The guide includes:
-- Download options
-- Recommended viewing tools
-- Best practices for team collaboration
-- Setup instructions for team members
+4. [Visualizations](docs/04-visualizations.md)
 
 ## Contributing
 
-This is a living document that benefits from collective experience. Contribute by:
+This is a living project that benefits from collective experience. Contribute by:
 1. Sharing case studies
 2. Suggesting improvements
-3. Adding industry insights
-4. Providing feedback on frameworks
+3. Adding features
+4. Providing feedback
 
 ## License
 
-This documentation is available under the MIT License. See the LICENSE file for more details. 
+This project is available under the MIT License. See the LICENSE file for more details.
