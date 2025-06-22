@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Import Couples</h2>
+    
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+    
+    <div class="card">
+        <div class="card-body">
+            <h5 class="card-title">Upload CSV File</h5>
+            <p class="card-text">
+                Upload your CSV file containing couple information. The file should have the following columns:
+            </p>
+            <ul>
+                <li><strong>Couple</strong> (required) - Names separated by "&" or "and"</li>
+                <li><strong>Date</strong> - In DD/MM/YYYY format</li>
+                <li><strong>Location</strong></li>
+                <li><strong>Guest Count</strong> - Number or range (e.g., "100" or "90-100")</li>
+                <li><strong>Ceremony Time</strong> - In 12-hour (e.g., "2:30 PM") or 24-hour format</li>
+                <li><strong>Role</strong></li>
+                <li><strong>Package</strong></li>
+                <li><strong>Fee</strong> - Can include multiple parts (e.g., "$1,200 + $200/hr")</li>
+                <li><strong>Travel Fee</strong></li>
+                <li><strong>Vows</strong></li>
+                <li><strong>Confirmed</strong></li>
+                <li><strong>Notes</strong></li>
+            </ul>
+            
+            <form method="POST" enctype="multipart/form-data" id="importForm">
+                <div class="mb-3">
+                    <label for="file" class="form-label">Choose CSV File</label>
+                    <input type="file" class="form-control" id="file" name="file" accept=".csv" required>
+                </div>
+                <button type="submit" class="btn btn-primary" id="submitBtn">Upload and Import</button>
+            </form>
+            
+            <!-- Progress indicator (hidden by default) -->
+            <div id="importProgress" class="mt-3" style="display: none;">
+                <div class="progress">
+                    <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                         role="progressbar" style="width: 100%">
+                        Processing...
+                    </div>
+                </div>
+                <div class="text-center mt-2" id="progressText">Importing data...</div>
+            </div>
+            
+            <!-- Error display (hidden by default) -->
+            <div id="errorDisplay" class="mt-3" style="display: none;">
+                <h6 class="text-danger">Errors:</h6>
+                <ul class="list-group" id="errorList">
+                </ul>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Results display (hidden by default) -->
+    <div id="resultsCard" class="card mt-4" style="display: none;">
+        <div class="card-body">
+            <h5 class="card-title">Import Results</h5>
+            <div id="resultsContent">
+            </div>
+        </div>
+    </div>
+    
+    <div class="mt-4">
+        <h4>Example CSV Format:</h4>
+        <pre class="bg-light p-3 rounded">
+Couple,Date,Location,Guest Count,Ceremony Time,Role,Package,Fee,Travel Fee,Vows,Confirmed,Notes
+Paige & Tim,07/03/2025,,,,Celebrant,,,,,,
+Adrian & Emma,21/03/2025,Tatra Receptions,,,Celebrant + MC,Ceremony + MC,"$1,200 + $200/hr MC",$40–$50 est.,Yes – Writing Own,Pending,
+Gordon & Emma,28/02/2026,Werribee Zoo,Approx. 100,6:00 PM,Celebrant,,,,,Pending,"Send contract, NOIM"</pre>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('importForm');
+    const progress = document.getElementById('importProgress');
+    const progressText = document.getElementById('progressText');
+    const errorDisplay = document.getElementById('errorDisplay');
+    const errorList = document.getElementById('errorList');
+    const resultsCard = document.getElementById('resultsCard');
+    const resultsContent = document.getElementById('resultsContent');
+    const submitBtn = document.getElementById('submitBtn');
+    
+    form.onsubmit = async function(e) {
+        e.preventDefault();
+        
+        // Show progress
+        progress.style.display = 'block';
+        errorDisplay.style.display = 'none';
+        resultsCard.style.display = 'none';
+        submitBtn.disabled = true;
+        
+        const formData = new FormData(form);
+        
+        try {
+            const response = await fetch('/import-names', {
+                method: 'POST',
+                body: formData
+            });
+            
+            const result = await response.json();
+            
+            // Hide progress
+            progress.style.display = 'none';
+            
+            if (result.errors && result.errors.length > 0) {
+                // Show errors
+                errorDisplay.style.display = 'block';
+                errorList.innerHTML = result.errors.map(error => 
+                    `<li class="list-group-item list-group-item-danger">${error}</li>`
+                ).join('');
+            }
+            
+            // Show results
+            resultsCard.style.display = 'block';
+            resultsContent.innerHTML = `
+                <p>Processed ${result.total_rows} rows</p>
+                <p>Successfully imported ${result.imported_count} couples</p>
+                ${result.errors.length > 0 ? 
+                    `<p class="text-danger">Encountered ${result.errors.length} errors</p>` : 
+                    '<p class="text-success">No errors encountered</p>'}
+            `;
+            
+        } catch (error) {
+            // Show error
+            progress.style.display = 'none';
+            errorDisplay.style.display = 'block';
+            errorList.innerHTML = `
+                <li class="list-group-item list-group-item-danger">
+                    Error processing file: ${error.message}
+                </li>
+            `;
+        }
+        
+        submitBtn.disabled = false;
+    };
+});
+</script>
+{% endblock %} 

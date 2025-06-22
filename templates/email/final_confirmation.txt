@@ -1,0 +1,42 @@
+Dear {partner1_name} and {partner2_name},
+
+With your wedding day approaching, I wanted to confirm all the final details for your ceremony.
+
+Ceremony Details:
+Date: {ceremony_date}
+Time: {ceremony_time}
+Location: {ceremony_location}
+Arrival Time for Couple: {arrival_time} (30 minutes before ceremony)
+Guest Arrival Time: {guest_arrival_time} (15 minutes before ceremony)
+
+I will arrive {celebrant_arrival_time} to:
+- Set up the PA system (if required)
+- Meet with your {music_coordinator} about ceremony music
+- Check in with both of you
+- Ensure everything is ready for your perfect ceremony
+
+Final Confirmations:
+- All legal paperwork has been submitted and approved
+- Your ceremony script has been finalized
+- Your vows have been received and prepared
+- Music selections have been confirmed
+- Final payment has been received
+
+On the day, please ensure:
+- You both have photo ID with you
+- Your witnesses are aware of their roles
+- Your rings are with the designated person
+- You have copies of your vows (if personal vows are being exchanged)
+
+Weather Forecast: {weather_forecast}
+Wet Weather Plan: {wet_weather_plan}
+
+If you need to reach me on the day:
+Mobile: {celebrant_mobile}
+Emergency Contact: {emergency_contact}
+
+I'm looking forward to being part of your special day. If you have any last-minute questions or concerns, please don't hesitate to contact me.
+
+Best wishes,
+{celebrant_name}
+Marriage Celebrant 

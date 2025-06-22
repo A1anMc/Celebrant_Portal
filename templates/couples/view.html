@@ -92,93 +92,88 @@
                 {% if couple.notes %}
                 <hr>
                 <h6>Notes</h6>
-                <p class="mb-0">{{ couple.notes|nl2br }}</p>
+                <p class="mb-0">{{ couple.notes|replace('\n', '<br>')|safe }}</p>
                 {% endif %}
             </div>
         </div>
 
         <!-- Ceremony Details -->
-        {% if couple.ceremonies %}
         <div class="card mb-4">
             <div class="card-header">
-                <h5 class="card-title mb-0">Ceremony Plan</h5>
+                <h5 class="card-title mb-0">Ceremony Details</h5>
             </div>
             <div class="card-body">
-                {% for ceremony in couple.ceremonies %}
-                <div class="mb-3">
-                    <h6>{{ ceremony.ceremony_type }} Ceremony</h6>
-                    {% if ceremony.template_content %}
-                    <div class="mb-2">
-                        <strong>Template:</strong>
-                        <pre class="bg-light p-3 rounded">{{ ceremony.template_content }}</pre>
+                <div class="row">
+                    <div class="col-md-6">
+                        <p class="mb-1">
+                            <i class="bi bi-clock"></i>
+                            <strong>Time:</strong> 
+                            {{ couple.ceremony_time or 'Not set' }}
+                        </p>
                     </div>
-                    {% endif %}
-                    {% if ceremony.custom_vows %}
-                    <div class="mb-2">
-                        <strong>Custom Vows:</strong>
-                        <pre class="bg-light p-3 rounded">{{ ceremony.custom_vows }}</pre>
+                    <div class="col-md-6">
+                        <p class="mb-1">
+                            <i class="bi bi-heart"></i>
+                            <strong>Type:</strong> 
+                            {{ couple.ceremony_type or 'Not set' }}
+                        </p>
                     </div>
-                    {% endif %}
-                    {% if ceremony.readings %}
-                    <div class="mb-2">
-                        <strong>Readings:</strong>
-                        <pre class="bg-light p-3 rounded">{{ ceremony.readings }}</pre>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <p class="mb-1">
+                            <i class="bi bi-people"></i>
+                            <strong>Guest Count:</strong> 
+                            {{ couple.guest_count or 'Not set' }}
+                        </p>
                     </div>
-                    {% endif %}
-                    {% if ceremony.music %}
-                    <div class="mb-2">
-                        <strong>Music:</strong>
-                        <pre class="bg-light p-3 rounded">{{ ceremony.music }}</pre>
+                    <div class="col-md-6">
+                        <p class="mb-1">
+                            <i class="bi bi-box"></i>
+                            <strong>Package:</strong> 
+                            {{ couple.package or 'Not set' }}
+                        </p>
                     </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <p class="mb-1">
+                            <i class="bi bi-currency-dollar"></i>
+                            <strong>Fee:</strong> 
+                            ${{ couple.fee or 'Not set' }}
+                        </p>
+                    </div>
+                    <div class="col-md-6">
+                        <p class="mb-1">
+                            <i class="bi bi-car-front"></i>
+                            <strong>Travel Fee:</strong> 
+                            ${{ couple.travel_fee or 'Not set' }}
+                        </p>
+                    </div>
+                </div>
+                
+                {% if couple.template %}
+                <hr>
+                <div class="mb-2">
+                    <strong>Ceremony Template:</strong>
+                    <p class="mb-1">{{ couple.template.name }}</p>
+                    {% if couple.template.description %}
+                    <p class="text-muted mb-0">{{ couple.template.description }}</p>
                     {% endif %}
                 </div>
-                {% endfor %}
+                {% endif %}
+                
+                {% if couple.vows %}
+                <hr>
+                <div class="mb-2">
+                    <strong>Vows:</strong>
+                    <pre class="bg-light p-3 rounded">{{ couple.vows }}</pre>
+                </div>
+                {% endif %}
             </div>
         </div>
-        {% endif %}
 
-        <!-- Documents -->
-        {% if couple.documents %}
-        <div class="card">
-            <div class="card-header">
-                <h5 class="card-title mb-0">Documents</h5>
-            </div>
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table">
-                        <thead>
-                            <tr>
-                                <th>Document</th>
-                                <th>Status</th>
-                                <th>Uploaded</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for doc in couple.documents %}
-                            <tr>
-                                <td>{{ doc.document_type }}</td>
-                                <td>
-                                    <span class="badge bg-{{ 'success' if doc.status == 'Verified' 
-                                        else 'warning' if doc.status == 'Pending'
-                                        else 'info' }}">
-                                        {{ doc.status }}
-                                    </span>
-                                </td>
-                                <td>{{ doc.uploaded_at.strftime('%d %b %Y') }}</td>
-                                <td>
-                                    <a href="#" class="btn btn-sm btn-outline-primary">
-                                        <i class="bi bi-download"></i>
-                                    </a>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-        {% endif %}
+
     </div>
 
     <div class="col-md-4">
@@ -219,21 +214,21 @@
                             <small class="text-muted">{{ couple.created_at.strftime('%d %B %Y') }}</small>
                         </div>
                     </div>
-                    {% if couple.ceremonies %}
+                    {% if couple.ceremony_date %}
                     <div class="timeline-item">
                         <div class="timeline-marker bg-primary"></div>
                         <div class="timeline-content">
-                            <h6 class="mb-0">Ceremony Planned</h6>
-                            <small class="text-muted">{{ couple.ceremonies[0].created_at.strftime('%d %B %Y') }}</small>
+                            <h6 class="mb-0">Ceremony Date Set</h6>
+                            <small class="text-muted">{{ couple.ceremony_date.strftime('%d %B %Y') }}</small>
                         </div>
                     </div>
                     {% endif %}
-                    {% if couple.documents %}
+                    {% if couple.status == 'Confirmed' %}
                     <div class="timeline-item">
-                        <div class="timeline-marker bg-info"></div>
+                        <div class="timeline-marker bg-success"></div>
                         <div class="timeline-content">
-                            <h6 class="mb-0">Documents Added</h6>
-                            <small class="text-muted">{{ couple.documents[0].uploaded_at.strftime('%d %B %Y') }}</small>
+                            <h6 class="mb-0">Booking Confirmed</h6>
+                            <small class="text-muted">{{ couple.updated_at.strftime('%d %B %Y') }}</small>
                         </div>
                     </div>
                     {% endif %}

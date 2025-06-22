@@ -1,19 +1,27 @@
 import os
 import pickle
+import logging
 from datetime import datetime, timedelta, timezone
 from typing import List, Optional, Dict, Any, Union, Mapping
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
 from googleapiclient.discovery import build
+from googleapiclient.errors import HttpError
 import base64
 import email
 from email.utils import parsedate_to_datetime
 import re
 from sqlalchemy.orm.session import Session
 from sqlalchemy.orm.scoping import scoped_session
+from sqlalchemy.exc import SQLAlchemyError
 from flask import current_app
 from flask_sqlalchemy import SQLAlchemy
+from fuzzywuzzy import fuzz
+from fuzzywuzzy import process
+
+# Configure logging
+logger = logging.getLogger(__name__)
 
 # If modifying these scopes, delete the file token.pickle.
 SCOPES = ['https://www.googleapis.com/auth/gmail.modify']
@@ -24,6 +32,8 @@ class GmailService:
         self.creds = None    # type: Optional[Credentials]
         self.flow = None     # type: Optional[InstalledAppFlow]
         self.SCOPES = SCOPES  # Use the same scopes defined at module level
+        self.email_templates = self._load_email_templates()
+        self.thread_cache = {}
 
     def authenticate(self) -> Optional[str]:
         """Authenticate with Gmail API using OAuth 2.0.
@@ -165,35 +175,45 @@ class GmailService:
                 )
 
     def search_emails(self, query: str, max_results: int = 100) -> List[Dict[str, Any]]:
-        """
-        Search for emails using the given query.
-        """
+        """Search for emails matching the query."""
         try:
-            print(f"Searching emails with query: {query}")
-            results = self.service.users().messages().list(
-                userId='me',
-                q=query,
-                maxResults=max_results
-            ).execute()
+            results = []
+            page_token = None
             
-            messages = results.get('messages', [])
-            print(f"Found {len(messages)} messages matching query")
-            
-            emails = []
-            for message in messages:
-                try:
-                    email_data = self.get_email_data(message['id'])
-                    if email_data:
-                        emails.append(email_data)
-                except Exception as e:
-                    print(f"Error getting email data for message {message['id']}: {str(e)}")
-                    continue
-            
-            print(f"Successfully retrieved {len(emails)} email details")
-            return emails
+            while True:
+                response = self.service.users().messages().list(
+                    userId='me',
+                    q=query,
+                    pageToken=page_token,
+                    maxResults=min(max_results - len(results), 100)
+                ).execute()
+                
+                messages = response.get('messages', [])
+                
+                for message in messages:
+                    msg = self.service.users().messages().get(
+                        userId='me',
+                        id=message['id'],
+                        format='full'
+                    ).execute()
+                    
+                    # Get thread messages
+                    thread_messages = self._get_thread_messages(msg['threadId'])
+                    msg['thread_messages'] = thread_messages
+                    
+                    results.append(msg)
+                    
+                    if len(results) >= max_results:
+                        return results
+                
+                page_token = response.get('nextPageToken')
+                if not page_token:
+                    break
+                    
+            return results
             
         except Exception as e:
-            print(f"Error searching emails: {str(e)}")
+            print(f"Error searching emails: {e}")
             return []
 
     def get_email_data(self, msg_id: str) -> Optional[Dict[str, Any]]:
@@ -436,105 +456,197 @@ class GmailService:
         Scan sent emails, process them, and populate the database with extracted information.
         """
         try:
+            logger.info("Starting email scan process...")
             # Ensure we're authenticated
             self.ensure_authenticated()
+            logger.info("Authentication successful")
             
-            # Search specifically in sent mail
-            query = f'in:sent newer_than:{days_to_scan}d'
-            emails = self.search_emails(query)
+            # Get database session and models
+            from app import db, Couple, ImportedName
+            logger.info("Database session initialized")
             
-            if not emails:
-                return ["No sent emails found to process"]
+            # Get unprocessed imported names
+            imported_names = ImportedName.query.filter_by(is_processed=False).all()
+            if not imported_names:
+                logger.info("No unprocessed imported names found")
+                return ["No names to scan for. Please import names first."]
             
+            logger.info(f"Found {len(imported_names)} unprocessed names to scan for")
             results = []
             processed_count = 0
             new_couples = 0
             updated_couples = 0
             
-            # Get database session from current app context
-            from app import db, Couple
-            
-            for email in emails:
+            for imported_name in imported_names:
                 try:
-                    # Extract email content and metadata
-                    email_info = self.extract_email_info(email)
-                    if not email_info:
+                    print(f"\nScanning for couple: {imported_name.partner1_name} and {imported_name.partner2_name}")
+                    
+                    # Create search query for this couple
+                    # Search for exact phrases of each name
+                    name_queries = []
+                    for name in [imported_name.partner1_name, imported_name.partner2_name]:
+                        if name:  # Only add if name is not empty
+                            # Add exact phrase match
+                            name_queries.append(f'"{name}"')
+                            # Add individual word matches as backup
+                            name_parts = name.split()
+                            if len(name_parts) > 1:  # Only add individual words for multi-word names
+                                name_queries.extend(name_parts)
+                    
+                    # Search for emails containing the names
+                    query = f'in:sent newer_than:{days_to_scan}d ({" OR ".join(name_queries)})'
+                    print(f"Search query: {query}")
+                    
+                    emails = self.search_emails(query)
+                    if not emails:
+                        print(f"No emails found for {imported_name.partner1_name} and {imported_name.partner2_name}")
                         continue
-                        
-                    # Get the email addresses
-                    partner_email = email_info['from_email'] if '@' in email_info['from_email'] else email_info['to_email']
                     
-                    # Check if this couple already exists
-                    existing_couple = Couple.query.filter(
-                        (Couple.partner1_email == partner_email) | 
-                        (Couple.partner2_email == partner_email)
-                    ).first() if partner_email else None
+                    print(f"Found {len(emails)} potential emails")
                     
-                    # Extract names from the email content
-                    names = self.extract_names(email_info)
+                    for email in emails:
+                        try:
+                            # Extract email content and metadata
+                            email_info = self.extract_email_info(email)
+                            if not email_info:
+                                continue
+                            
+                            # Verify this email actually contains the names we're looking for
+                            content = email_info['content'].lower()
+                            
+                            # Check for name variations
+                            name_variations = []
+                            # Original names
+                            if imported_name.partner1_name and imported_name.partner2_name:
+                                name_variations.extend([
+                                    f"{imported_name.partner1_name.lower()} and {imported_name.partner2_name.lower()}",
+                                    f"{imported_name.partner1_name.lower()} & {imported_name.partner2_name.lower()}",
+                                    f"{imported_name.partner2_name.lower()} and {imported_name.partner1_name.lower()}",
+                                    f"{imported_name.partner2_name.lower()} & {imported_name.partner1_name.lower()}"
+                                ])
+                            
+                            # Individual names
+                            if imported_name.partner1_name:
+                                name_variations.append(imported_name.partner1_name.lower())
+                            if imported_name.partner2_name:
+                                name_variations.append(imported_name.partner2_name.lower())
+                            
+                            # Check if any variation is found in the content
+                            name_found = any(variation in content for variation in name_variations)
+                            if not name_found:
+                                print("Names not found in email content, skipping...")
+                                continue
+                            
+                            print("Found matching email!")
+                            print(f"Subject: {email_info['subject']}")
+                            
+                            # Check if this couple already exists
+                            existing_couple = Couple.query.filter(
+                                (Couple.partner1_name == imported_name.partner1_name) & 
+                                (Couple.partner2_name == imported_name.partner2_name)
+                            ).first()
+                            
+                            if existing_couple:
+                                print(f"Found existing couple: {imported_name.partner1_name} and {imported_name.partner2_name}")
+                                # Update existing couple with new information
+                                updated = self.update_couple_info(existing_couple, email_info, db)
+                                if updated:
+                                    updated_couples += 1
+                                    results.append(f"Updated information for {imported_name.partner1_name} and {imported_name.partner2_name}")
+                            else:
+                                print("Creating new couple entry...")
+                                new_couple = Couple(
+                                    celebrant_id=user_id,
+                                    partner1_name=imported_name.partner1_name,
+                                    partner2_name=imported_name.partner2_name,
+                                    partner1_email=email_info.get('to_email', ''),  # Use recipient's email
+                                    ceremony_date=imported_name.ceremony_date,  # Use date from import
+                                    ceremony_location=imported_name.location,  # Use location from import
+                                    ceremony_type=imported_name.role,  # Use role from import
+                                    status='Inquiry',
+                                    notes=self.format_email_info_as_notes(email_info)
+                                )
+                                
+                                # Add imported information to notes
+                                imported_notes = []
+                                if imported_name.guest_count:
+                                    imported_notes.append(f"Guest Count: {imported_name.guest_count}")
+                                if imported_name.ceremony_time:
+                                    imported_notes.append(f"Ceremony Time: {imported_name.ceremony_time}")
+                                if imported_name.package:
+                                    imported_notes.append(f"Package: {imported_name.package}")
+                                if imported_name.fee:
+                                    imported_notes.append(f"Fee: {imported_name.fee}")
+                                if imported_name.travel_fee:
+                                    imported_notes.append(f"Travel Fee: {imported_name.travel_fee}")
+                                if imported_name.vows:
+                                    imported_notes.append(f"Vows: {imported_name.vows}")
+                                if imported_name.confirmed:
+                                    imported_notes.append(f"Confirmed: {imported_name.confirmed}")
+                                if imported_name.notes:
+                                    imported_notes.append(f"Additional Notes: {imported_name.notes}")
+                                
+                                if imported_notes:
+                                    new_couple.notes = "Imported Information:\n" + "\n".join(imported_notes) + "\n\n" + new_couple.notes
+                                
+                                # Update with any additional info from the email
+                                if 'dates' in email_info['extracted_data']:
+                                    print("Attempting to extract ceremony date...")
+                                    ceremony_date = self.extract_date(email_info['extracted_data']['dates'])
+                                    if ceremony_date and not new_couple.ceremony_date:
+                                        new_couple.ceremony_date = ceremony_date
+                                        print(f"Set ceremony date to: {ceremony_date}")
+                                
+                                if 'venues' in email_info['extracted_data']:
+                                    print("Extracting venue information...")
+                                    venue_info = ' | '.join(email_info['extracted_data']['venues'])
+                                    if venue_info and not new_couple.ceremony_location:
+                                        new_couple.ceremony_location = venue_info[:255]
+                                        print(f"Set venue to: {new_couple.ceremony_location}")
+                                
+                                db.session.add(new_couple)
+                                new_couples += 1
+                                results.append(f"Created new couple entry for {imported_name.partner1_name} and {imported_name.partner2_name}")
+                                break  # Stop processing more emails for this couple once we've created an entry
+                            
+                            processed_count += 1
+                            
+                        except Exception as e:
+                            print(f"Error processing email: {str(e)}")
+                            results.append(f"Error processing email for {imported_name.partner1_name} and {imported_name.partner2_name}: {str(e)}")
+                            continue
                     
-                    # Skip if we don't have at least one partner's name
-                    if not names.get('partner1') and not names.get('partner2'):
-                        results.append(f"Skipped email {partner_email} - no partner names found")
-                        continue
-                    
-                    if existing_couple:
-                        # Update existing couple with new information
-                        updated = self.update_couple_info(existing_couple, email_info, db)
-                        if updated:
-                            updated_couples += 1
-                            results.append(f"Updated information for couple with email {partner_email}")
-                    else:
-                        # Create new couple - ensure we have at least one partner name
-                        partner1_name = names.get('partner1', 'Partner 1')  # Use placeholder if not found
-                        partner2_name = names.get('partner2', 'Partner 2')  # Use placeholder if not found
-                        
-                        new_couple = Couple(
-                            celebrant_id=user_id,
-                            partner1_email=partner_email,
-                            partner1_name=partner1_name,
-                            partner2_name=partner2_name,
-                            status='Inquiry',
-                            notes=self.format_email_info_as_notes(email_info)
-                        )
-                        
-                        # Set ceremony details if found
-                        if 'dates' in email_info['extracted_data']:
-                            ceremony_date = self.extract_date(email_info['extracted_data']['dates'])
-                            if ceremony_date:
-                                new_couple.ceremony_date = ceremony_date
-                        
-                        if 'venues' in email_info['extracted_data']:
-                            venue_info = ' | '.join(email_info['extracted_data']['venues'])
-                            new_couple.ceremony_location = venue_info[:255]  # Respect field length
-                        
-                        db.session.add(new_couple)
-                        new_couples += 1
-                        results.append(f"Created new couple entry from email {partner_email}")
-                    
-                    processed_count += 1
+                    # Mark this imported name as processed
+                    imported_name.is_processed = True
+                    db.session.merge(imported_name)
                     
                 except Exception as e:
-                    results.append(f"Error processing email: {str(e)}")
+                    print(f"Error processing couple {imported_name.partner1_name} and {imported_name.partner2_name}: {str(e)}")
+                    results.append(f"Error processing couple: {str(e)}")
                     continue
             
             # Commit all changes
             try:
+                print("\nCommitting changes to database...")
                 db.session.commit()
+                print("Successfully committed all changes")
             except Exception as e:
+                print(f"Error saving to database: {str(e)}")
                 db.session.rollback()
                 results.append(f"Error saving to database: {str(e)}")
             
             # Add summary to results
-            results.insert(0, f"Processed {processed_count} sent emails")
+            results.insert(0, f"Processed {processed_count} emails")
             if new_couples > 0:
                 results.insert(1, f"Created {new_couples} new couples")
             if updated_couples > 0:
                 results.insert(1, f"Updated {updated_couples} existing couples")
             
+            print("\nEmail scanning process completed")
             return results
             
         except Exception as e:
+            print(f"Error in scan_and_process_emails: {str(e)}")
             return [f"Error scanning emails: {str(e)}"]
 
     def extract_names(self, email_info: Dict[str, Any]) -> Mapping[str, Optional[str]]:
@@ -586,21 +698,49 @@ class GmailService:
             if ceremony_date:
                 couple.ceremony_date = ceremony_date
                 updated = True
-        
-        # Update venue if found and not set
+                
+        # Update ceremony location if found and not set
         if not couple.ceremony_location and 'venues' in email_info['extracted_data']:
             venue_info = ' | '.join(email_info['extracted_data']['venues'])
-            couple.ceremony_location = venue_info[:255]  # Respect field length
+            if venue_info:
+                couple.ceremony_location = venue_info[:255]  # Respect field length limit
+                updated = True
+                
+        # Update ceremony type if found and not set
+        if not couple.ceremony_type and 'ceremony_types' in email_info['extracted_data']:
+            ceremony_types = email_info['extracted_data']['ceremony_types']
+            if ceremony_types:
+                couple.ceremony_type = ceremony_types[0][:50]  # Use first found type, respect field length
+                updated = True
+                
+        # Update email addresses if found and not set
+        if 'from_email' in email_info and not couple.partner1_email:
+            couple.partner1_email = email_info['from_email']
             updated = True
-        
-        # Append new notes if they don't exist
+        if 'to_email' in email_info and not couple.partner2_email:
+            couple.partner2_email = email_info['to_email']
+            updated = True
+            
+        # Update phone numbers if found in email content
+        phone_pattern = r'\b(?:\+?61|0)?(?:4\d{8}|[2378]\d{8})\b'  # Australian phone number pattern
+        if not couple.partner1_phone or not couple.partner2_phone:
+            phone_matches = re.findall(phone_pattern, email_info['content'])
+            if phone_matches:
+                if not couple.partner1_phone:
+                    couple.partner1_phone = phone_matches[0]
+                    updated = True
+                elif len(phone_matches) > 1 and not couple.partner2_phone:
+                    couple.partner2_phone = phone_matches[1]
+                    updated = True
+                    
+        # Append new email information to notes
         new_notes = self.format_email_info_as_notes(email_info)
-        if new_notes and new_notes not in (couple.notes or ''):
-            couple.notes = ((couple.notes or '') + '\n\n' + new_notes).strip()
+        if new_notes:
+            if couple.notes:
+                couple.notes = couple.notes + "\n\n" + new_notes
+            else:
+                couple.notes = new_notes
             updated = True
-        
-        if updated:
-            db.session.merge(couple)
         
         return updated
 
@@ -664,220 +804,180 @@ class GmailService:
         return None
 
     def extract_email_info(self, email: Dict[str, Any]) -> Optional[Dict[str, Any]]:
-        """
-        Extract relevant information from an email.
-        """
+        """Extract relevant information from an email."""
         try:
-            # Get email metadata
-            headers = {h['name']: h['value'] for h in email.get('payload', {}).get('headers', [])}
+            # Get headers
+            headers = {header['name']: header['value'] for header in email['payload']['headers']}
             subject = headers.get('Subject', '')
-            from_email = self.extract_email_address(headers.get('From', ''))
-            to_email = self.extract_email_address(headers.get('To', ''))
-            date_str = headers.get('Date', '')
-            content = self.get_email_content(email)
             
-            # Initialize extracted info
-            info = {
+            # Get body
+            body = ''
+            if 'parts' in email['payload']:
+                for part in email['payload']['parts']:
+                    if part['mimeType'] == 'text/plain':
+                        body = base64.urlsafe_b64decode(part['body']['data']).decode()
+                        break
+            elif 'body' in email['payload'] and 'data' in email['payload']['body']:
+                body = base64.urlsafe_b64decode(email['payload']['body']['data']).decode()
+            
+            # Check for ceremony-related keywords
+            ceremony_keywords = [
+                'wedding', 'ceremony', 'celebrant', 'marriage',
+                'vows', 'officiant', 'celebration', 'union'
+            ]
+            is_ceremony_related = any(keyword in body.lower() or keyword in subject.lower() 
+                                    for keyword in ceremony_keywords)
+            
+            if not is_ceremony_related:
+                return None
+            
+            # Check for confirmation indicators
+            confirmation_keywords = [
+                'confirm', 'booking', 'reserved', 'scheduled',
+                'appointment', 'date', 'time', 'location'
+            ]
+            is_confirmation = any(keyword in body.lower() or keyword in subject.lower() 
+                                for keyword in confirmation_keywords)
+            
+            # Check if email needs response
+            needs_response = False
+            question_indicators = ['?', 'please let me know', 'could you', 'would you', 'can you']
+            if any(indicator in body.lower() for indicator in question_indicators):
+                needs_response = True
+            
+            # Get thread context
+            thread_context = []
+            for msg in email.get('thread_messages', []):
+                if msg['id'] != email['id']:  # Skip current message
+                    thread_headers = {h['name']: h['value'] for h in msg['payload']['headers']}
+                    thread_context.append({
+                        'subject': thread_headers.get('Subject', ''),
+                        'date': msg['internalDate'],
+                        'snippet': msg.get('snippet', '')
+                    })
+            
+            # Check for similar templates
+            template_matches = []
+            for name, template in self.email_templates.items():
+                similarity = fuzz.ratio(body, template)
+                if similarity > 80:  # 80% similarity threshold
+                    template_matches.append(name)
+            
+            # Extract data from email content
+            extracted_data = {}
+            
+            # Extract dates (simple patterns)
+            date_patterns = [
+                r'\b(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})\b',
+                r'\b(\d{1,2})\s+(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{4})\b'
+            ]
+            dates = []
+            for pattern in date_patterns:
+                dates.extend(re.findall(pattern, body, re.IGNORECASE))
+            if dates:
+                extracted_data['dates'] = [' '.join(date) if isinstance(date, tuple) else date for date in dates]
+            
+            # Extract venues/locations
+            venue_keywords = ['venue', 'location', 'church', 'hall', 'reception', 'ceremony at', 'held at']
+            venues = []
+            for keyword in venue_keywords:
+                pattern = rf'{keyword}[:\s]+([A-Za-z\s,]+?)(?:\.|,|\n|$)'
+                matches = re.findall(pattern, body, re.IGNORECASE)
+                venues.extend([match.strip() for match in matches if len(match.strip()) > 3])
+            if venues:
+                extracted_data['venues'] = list(set(venues))  # Remove duplicates
+            
+            return {
                 'subject': subject,
-                'from_email': from_email,
-                'to_email': to_email,
-                'date': date_str,
-                'extracted_data': {}
+                'content': body,
+                'from_email': headers.get('From', ''),
+                'to_email': headers.get('To', ''),
+                'date': headers.get('Date', ''),
+                'is_confirmation': is_confirmation,
+                'needs_response': needs_response,
+                'thread_context': thread_context,
+                'template_matches': template_matches,
+                'extracted_data': extracted_data
             }
-            
-            # Keywords to look for and their categories
-            keywords = {
-                'names': [
-                    'bride', 'groom', 'partner', 'fiancé', 'fiancee', 'couple',
-                    'mr', 'mrs', 'ms', 'miss', 'dr', 'professor'
-                ],
-                'dates': [
-                    'wedding date', 'ceremony date', 'wedding day', 
-                    'getting married', 'tying the knot', 'big day',
-                    'january', 'february', 'march', 'april', 'may', 'june',
-                    'july', 'august', 'september', 'october', 'november', 'december',
-                    '2024', '2025', '2026'
-                ],
-                'venues': [
-                    'venue', 'location', 'ceremony venue', 'reception venue',
-                    'garden', 'beach', 'hotel', 'restaurant', 'winery', 'estate',
-                    'farm', 'barn', 'chapel', 'church', 'cathedral', 'temple',
-                    'outdoor', 'indoor', 'backyard'
-                ],
-                'timing': [
-                    'morning', 'afternoon', 'evening', 'sunset', 'sunrise',
-                    'time', 'o\'clock', 'am', 'pm'
-                ],
-                'guest_count': [
-                    'guests', 'people', 'attendees', 'capacity', 'numbers',
-                    'intimate', 'small', 'large', 'big'
-                ],
-                'style': [
-                    'traditional', 'modern', 'rustic', 'elegant', 'casual',
-                    'formal', 'bohemian', 'vintage', 'classic', 'romantic',
-                    'simple', 'elaborate', 'cultural', 'religious'
-                ],
-                'contact_info': [
-                    'phone', 'mobile', 'cell', 'tel', 'email', 'contact',
-                    'reach', 'call', 'text', 'message', '@'
-                ],
-                'budget': [
-                    'budget', 'cost', 'price', 'fee', 'deposit', 'payment',
-                    'expensive', 'affordable', 'package', 'rate'
-                ],
-                'planning_stage': [
-                    'planning', 'early stages', 'beginning', 'started',
-                    'thinking about', 'considering', 'decided', 'booked',
-                    'confirmed', 'reserved', 'inquiry', 'enquiry'
-                ]
-            }
-            
-            # Extract information for each category
-            for category, keyword_list in keywords.items():
-                matches = []
-                for keyword in keyword_list:
-                    # Look for keyword matches in content
-                    pattern = rf'\b{keyword}\b'
-                    matches.extend(self.find_context(content, pattern))
-                
-                if matches:
-                    info['extracted_data'][category] = matches
-            
-            # Only return if we found any relevant information
-            return info if info['extracted_data'] else None
             
         except Exception as e:
-            print(f"Error extracting email info: {str(e)}")
+            print(f"Error extracting email info: {e}")
             return None
 
-    def find_context(self, text: str, pattern: str, context_chars: int = 50) -> List[str]:
-        """
-        Find matches for a pattern and return the surrounding context.
-        """
-        import re
-        matches = []
-        for match in re.finditer(pattern, text.lower()):
-            start = max(0, match.start() - context_chars)
-            end = min(len(text), match.end() + context_chars)
-            context = text[start:end].strip()
-            matches.append(context)
-        return matches
-
-    def extract_email_address(self, header_value: str) -> str:
-        """
-        Extract email address from a header value.
-        Handles formats like: "Name <email@example.com>" or just "email@example.com"
-        """
-        import re
-        email_pattern = r'[\w\.-]+@[\w\.-]+'
-        match = re.search(email_pattern, header_value)
-        return match.group(0) if match else header_value
-
-    def get_email_content(self, email: Dict[str, Any]) -> str:
-        """
-        Get the text content of an email, handling different MIME types and encodings.
-        """
-        try:
-            if 'payload' not in email:
-                return ''
+    def find_matching_couples(self, couples: List[Any], text: str, threshold: int = 80) -> List[Any]:
+        """Find couples that match the text using fuzzy matching."""
+        matching_couples = []
+        
+        for couple in couples:
+            names = [
+                couple.partner1_name,
+                couple.partner2_name
+            ]
+            names = [name for name in names if name]  # Remove empty names
+            
+            if self._fuzzy_name_match(text, names, threshold):
+                matching_couples.append(couple)
                 
-            payload = email['payload']
-            
-            # Handle multipart messages
-            if 'parts' in payload:
-                text_content = []
-                for part in payload['parts']:
-                    if part.get('mimeType') == 'text/plain':
-                        data = part.get('body', {}).get('data', '')
-                        if data:
-                            import base64
-                            decoded = base64.urlsafe_b64decode(data).decode('utf-8')
-                            text_content.append(decoded)
-                return '\n'.join(text_content)
-            
-            # Handle single part messages
-            elif 'body' in payload:
-                data = payload['body'].get('data', '')
-                if data:
-                    import base64
-                    return base64.urlsafe_b64decode(data).decode('utf-8')
-            
-            return ''
-            
-        except Exception as e:
-            print(f"Error getting email content: {str(e)}")
-            return ''
+        return matching_couples
 
-    def needs_followup(self, email: Dict[str, Any]) -> bool:
-        """
-        Determine if a sent email needs follow-up.
-        Returns True if:
-        - The email was sent more than 7 days ago
-        - No reply has been received
-        - Contains wedding-related keywords
-        """
+    def generate_email_template(self, template_name: str, context: Dict[str, Any]) -> str:
+        """Generate an email from a template."""
+        if template_name not in self.email_templates:
+            raise ValueError(f"Template '{template_name}' not found")
+            
+        template = self.email_templates[template_name]
+        
+        # Replace placeholders
+        for key, value in context.items():
+            placeholder = f"{{{key}}}"
+            template = template.replace(placeholder, str(value))
+            
+        return template
+
+    def _get_thread_messages(self, thread_id: str) -> List[Dict[str, Any]]:
+        """Get all messages in a thread."""
+        if thread_id in self.thread_cache:
+            return self.thread_cache[thread_id]
+            
         try:
-            # Get email metadata
-            headers = {h['name']: h['value'] for h in email.get('payload', {}).get('headers', [])}
-            date_str = headers.get('Date')
-            
-            if not date_str:
-                return False
-                
-            # Parse the email date
-            email_date = datetime.strptime(date_str, '%a, %d %b %Y %H:%M:%S %z')
-            days_since_sent = (datetime.now(timezone.utc) - email_date).days
-            
-            # Check if it's been more than 7 days
-            if days_since_sent >= 7:
-                # Search for any replies to this email
-                thread_id = email.get('threadId')
-                if thread_id:
-                    replies = self.search_emails(f'in:inbox threadId:{thread_id}')
-                    if not replies:  # No replies found
-                        return True
-            
-            return False
-            
+            thread = self.service.users().threads().get(userId='me', id=thread_id).execute()
+            messages = thread.get('messages', [])
+            self.thread_cache[thread_id] = messages
+            return messages
         except Exception as e:
-            print(f"Error checking for follow-up need: {str(e)}")
-            return False
+            print(f"Error getting thread messages: {e}")
+            return []
 
-    def is_wedding_related(self, email: Dict[str, Any]) -> bool:
-        """
-        Check if an email is wedding-related based on its content.
-        """
-        # Get email subject and snippet
-        subject = email.get('subject', '').lower()
-        snippet = email.get('snippet', '').lower()
+    def _fuzzy_name_match(self, text: str, names: List[str], threshold: int = 80) -> bool:
+        """Check if any name appears in the text using fuzzy matching."""
+        # Normalize text
+        text = text.lower()
         
-        # Keywords that indicate wedding-related content
-        wedding_keywords = [
-            'wedding', 'ceremony', 'celebrant',
-            'marriage', 'officiant', 'bride', 'groom',
-            'venue', 'reception', 'engagement'
-        ]
+        # Generate name variations
+        name_variations = []
+        for name in names:
+            name = name.lower()
+            # Full name
+            name_variations.append(name)
+            # First name only
+            if ' ' in name:
+                name_variations.append(name.split()[0])
+            # Last name only
+            if ' ' in name:
+                name_variations.append(name.split()[-1])
+            # Initials
+            if ' ' in name:
+                initials = ''.join(word[0] for word in name.split())
+                name_variations.append(initials)
         
-        # Check subject and snippet for keywords
-        for keyword in wedding_keywords:
-            if keyword in subject or keyword in snippet:
-                return True
-        
-        return False
-        
-    def needs_response(self, email: Dict[str, Any]) -> bool:
-        """
-        Determine if an email needs a response.
-        """
-        # Get email metadata
-        headers = {h['name']: h['value'] for h in email.get('payload', {}).get('headers', [])}
-        to_header = headers.get('To', '').lower()
-        from_header = headers.get('From', '').lower()
-        
-        # If the email was sent to us and hasn't been replied to
-        if 'in-reply-to' not in headers and '@' in to_header:
-            return True
-            
+        # Check each word in the text against name variations
+        words = text.split()
+        for word in words:
+            for variation in name_variations:
+                ratio = fuzz.ratio(word, variation)
+                if ratio >= threshold:
+                    return True
+                    
         return False
 
     def add_label(self, msg_id: str, label_name: str) -> None:
@@ -901,4 +1001,18 @@ class GmailService:
                 body={'addLabelIds': [label_name], 'removeLabelIds': [label for label in existing_labels if label != label_name]}
             ).execute()
         except Exception as e:
-            print(f"Error adding label '{label_name}' to email {msg_id}: {str(e)}") 
+            print(f"Error adding label '{label_name}' to email {msg_id}: {str(e)}")
+
+    def _load_email_templates(self) -> Dict[str, str]:
+        """Load email templates from files."""
+        templates = {}
+        template_dir = os.path.join(os.path.dirname(__file__), '..', 'templates', 'email')
+        
+        if os.path.exists(template_dir):
+            for filename in os.listdir(template_dir):
+                if filename.endswith('.txt'):
+                    template_name = os.path.splitext(filename)[0]
+                    with open(os.path.join(template_dir, filename)) as f:
+                        templates[template_name] = f.read()
+                        
+        return templates 

@@ -1,0 +1,25 @@
+Dear {partner1_name} and {partner2_name},
+
+I hope your wedding preparations are going well. This is a friendly reminder about our upcoming meeting to discuss your ceremony details.
+
+Meeting Details:
+Date: {meeting_date}
+Time: {meeting_time}
+Location: {meeting_location}
+
+During this meeting, we will:
+1. Review your ceremony preferences
+2. Discuss your vows (if you're writing your own)
+3. Go through the ceremony timeline
+4. Complete any remaining paperwork
+
+Please remember to bring:
+{required_documents}
+
+If you need to reschedule or have any questions before our meeting, please don't hesitate to contact me.
+
+Looking forward to meeting with you both.
+
+Best regards,
+{celebrant_name}
+Marriage Celebrant 
