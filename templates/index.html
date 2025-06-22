@@ -62,7 +62,7 @@
                 {% endif %}
             </div>
         </div>
-    </div>
+                </div>
 
     <!-- Quick Stats -->
     <div class="col-md-4">
@@ -87,8 +87,8 @@
                     <div class="flex-shrink-0">
                         <div class="bg-warning bg-opacity-10 p-2 rounded">
                             <i class="bi bi-file-earmark-text text-warning"></i>
-                        </div>
-                    </div>
+                </div>
+            </div>
                     <div class="flex-grow-1 ms-3">
                         <h6 class="mb-0">Pending Documents</h6>
                         <small class="text-muted">Require attention</small>
@@ -99,8 +99,8 @@
                     <div class="flex-shrink-0">
                         <div class="bg-success bg-opacity-10 p-2 rounded">
                             <i class="bi bi-people text-success"></i>
-                        </div>
-                    </div>
+                </div>
+            </div>
                     <div class="flex-grow-1 ms-3">
                         <h6 class="mb-0">Active Couples</h6>
                         <small class="text-muted">In planning</small>
@@ -125,8 +125,8 @@
                                 <small class="text-muted">{{ couple.created_at.strftime('%d %b') }}</small>
                             </div>
                             <p class="mb-1">{{ couple.partner1_name }} & {{ couple.partner2_name }}</p>
-                        </div>
-                        {% endfor %}
+                    </div>
+                    {% endfor %}
                     {% else %}
                         <p class="text-muted text-center my-3">No recent activity</p>
                     {% endif %}

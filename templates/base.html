@@ -6,14 +6,16 @@
     <title>{% block title %}Marriage Celebrant Portal{% endblock %}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link href="https://fonts.googleapis.com/css2?family=Arimo:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.cdnfonts.com/css/lovelo" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
     {% if current_user.is_authenticated %}
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <nav class="navbar navbar-expand-lg">
         <div class="container">
             <a class="navbar-brand" href="{{ url_for('index') }}">
-                <i class="fas fa-heart"></i> Celebrant Portal
+                <i class="bi bi-heart-fill"></i> Celebrant Portal
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
@@ -22,31 +24,33 @@
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item">
                         <a class="nav-link {% if request.endpoint == 'index' %}active{% endif %}" href="{{ url_for('index') }}">
-                            <i class="fas fa-home"></i> Dashboard
+                            <i class="bi bi-house-heart"></i> Dashboard
                         </a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link {% if request.endpoint == 'couples_list' %}active{% endif %}" href="{{ url_for('couples_list') }}">
-                            <i class="fas fa-users"></i> Couples
+                            <i class="bi bi-people-hearts"></i> Couples
                         </a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link {% if request.endpoint == 'templates_list' %}active{% endif %}" href="{{ url_for('templates_list') }}">
-                            <i class="fas fa-file-alt"></i> Templates
+                            <i class="bi bi-file-earmark-text"></i> Templates
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('scan_emails') }}">Scan Emails</a>
+                        <a class="nav-link {% if request.endpoint == 'scan_emails' %}active{% endif %}" href="{{ url_for('scan_emails') }}">
+                            <i class="bi bi-envelope-heart"></i> Scan Emails
+                        </a>
                     </li>
                 </ul>
                 <ul class="navbar-nav">
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
-                            <i class="fas fa-user"></i> {{ current_user.name }}
+                            <i class="bi bi-person-circle"></i> {{ current_user.name }}
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end">
                             <li><a class="dropdown-item" href="{{ url_for('logout') }}">
-                                <i class="fas fa-sign-out-alt"></i> Logout
+                                <i class="bi bi-box-arrow-right"></i> Logout
                             </a></li>
                         </ul>
                     </li>
@@ -71,9 +75,14 @@
         {% block content %}{% endblock %}
     </main>
 
-    <footer class="footer mt-auto py-3 bg-light">
+    <footer class="footer mt-auto py-4">
         <div class="container text-center">
-            <span class="text-muted">© 2024 Marriage Celebrant Portal. All rights reserved.</span>
+            <div class="row">
+                <div class="col-md-12">
+                    <p class="mb-0">Creating beautiful ceremonies with love and care</p>
+                    <small class="text-muted">© 2024 Marriage Celebrant Portal. All rights reserved.</small>
+                </div>
+            </div>
         </div>
     </footer>
 

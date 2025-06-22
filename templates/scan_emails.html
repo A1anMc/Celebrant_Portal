@@ -1,86 +1,98 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="container mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1>Scan Gmail for Couple Information</h1>
-        <a href="{{ url_for('couples_list') }}" class="btn btn-outline-secondary">
-            <i class="fas fa-arrow-left"></i> Back to Couples
-        </a>
-    </div>
+<div class="container mt-5">
+    <h1>Scan Emails</h1>
     
     {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
             {% for category, message in messages %}
-                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-                    {{ message }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>
+                {% if category == 'error' %}
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        <h4 class="alert-heading">Authentication Required</h4>
+                        <p>{{ message }}</p>
+                        {% if 'credentials not found' in message %}
+                            <hr>
+                            <p class="mb-0">Please follow the setup instructions above to configure Gmail API access.</p>
+                        {% endif %}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% else %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endif %}
             {% endfor %}
         {% endif %}
     {% endwith %}
-    
+
     <div class="card mb-4">
-        <div class="card-header">
-            <h5 class="card-title mb-0">Setup Instructions</h5>
-        </div>
         <div class="card-body">
-            <ol class="mb-0">
-                <li class="mb-2">Go to the <a href="https://console.cloud.google.com" target="_blank">Google Cloud Console</a></li>
-                <li class="mb-2">Create a new project or select an existing one</li>
-                <li class="mb-2">Enable the Gmail API for your project</li>
-                <li class="mb-2">Create OAuth 2.0 credentials:
-                    <ul>
-                        <li>Application type: Desktop application</li>
-                        <li>Download the credentials and save as <code>credentials.json</code></li>
+            <h5 class="card-title">Gmail Integration Status</h5>
+            <div class="mb-3">
+                <p class="card-text">
+                    {% if credentials_exist %}
+                        <span class="badge bg-success">Credentials Found</span>
+                    {% else %}
+                        <span class="badge bg-danger">Credentials Missing</span>
+                    {% endif %}
+                    
+                    {% if token_exists %}
+                        <span class="badge bg-success">Authenticated</span>
+                    {% else %}
+                        <span class="badge bg-warning text-dark">Not Authenticated</span>
+                    {% endif %}
+                </p>
+            </div>
+            
+            {% if not credentials_exist %}
+                <div class="alert alert-info">
+                    <h4 class="alert-heading">Gmail API Setup Required</h4>
+                    <p>To enable email scanning, you need to set up Gmail API access:</p>
+                    <ol>
+                        <li>Go to <a href="https://console.cloud.google.com" target="_blank">Google Cloud Console</a></li>
+                        <li>Create a project or select an existing one</li>
+                        <li>Enable the Gmail API for your project</li>
+                        <li>Go to Credentials</li>
+                        <li>Create OAuth 2.0 Client ID (Application type: Desktop)</li>
+                        <li>Download the credentials and save as 'credentials.json'</li>
                         <li>Place the file in the application root directory</li>
-                    </ul>
-                </li>
-                <li class="mb-2">The first time you run the scanner, you'll need to:
-                    <ul>
-                        <li>Authorize the application in your browser</li>
-                        <li>Grant access to your Gmail account</li>
-                        <li>The authorization token will be saved for future use</li>
-                    </ul>
-                </li>
-            </ol>
+                    </ol>
+                </div>
+            {% endif %}
+            
+            {% if credentials_exist and not token_exists %}
+                <div class="alert alert-warning">
+                    <h4 class="alert-heading">Authentication Required</h4>
+                    <p>You have credentials set up, but need to authenticate with Gmail. Click the button below to start the authentication process.</p>
+                </div>
+            {% endif %}
         </div>
     </div>
 
     <div class="card">
-        <div class="card-header">
-            <h5 class="card-title mb-0">Scan Settings</h5>
-        </div>
         <div class="card-body">
-            <form method="POST">
-                <div class="mb-3">
-                    <label for="days" class="form-label">Scan emails from the last X days:</label>
-                    <input type="number" class="form-control" id="days" name="days" 
-                           value="30" min="1" max="365" required>
-                    <div class="form-text">
-                        Choose between 1 and 365 days. The scanner will look for:
-                        <ul class="mt-2">
-                            <li>Email addresses and phone numbers</li>
-                            <li>Potential ceremony dates</li>
-                            <li>Venue/location information</li>
-                        </ul>
-                    </div>
-                </div>
-                
-                <div class="alert alert-info">
-                    <i class="fas fa-info-circle"></i> The scanner will:
-                    <ul class="mb-0">
-                        <li>Check for duplicate entries before creating new couples</li>
-                        <li>Store relevant email information in the couple's notes</li>
-                        <li>Set status as "Inquiry" for new couples</li>
-                        <li>Mark names as "[Name Pending]" for manual update</li>
-                    </ul>
-                </div>
-                
-                <button type="submit" class="btn btn-primary">
-                    <i class="fas fa-search"></i> Start Scanning
+            <h5 class="card-title">Email Scanning Controls</h5>
+            
+            <form method="post" class="mb-3">
+                <button type="submit" class="btn btn-primary" {% if not credentials_exist %}disabled{% endif %}>
+                    {% if token_exists %}
+                        Scan Emails Now
+                    {% else %}
+                        Authenticate with Gmail
+                    {% endif %}
                 </button>
             </form>
+
+            {% if scan_results %}
+                <h6>Last Scan Results:</h6>
+                <ul class="list-group">
+                    {% for result in scan_results %}
+                        <li class="list-group-item">{{ result }}</li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
         </div>
     </div>
 </div>
@@ -93,13 +105,15 @@ document.addEventListener('DOMContentLoaded', function() {
     const form = document.querySelector('form');
     const daysInput = document.getElementById('days');
     
-    form.addEventListener('submit', function(event) {
-        const days = parseInt(daysInput.value);
-        if (isNaN(days) || days < 1 || days > 365) {
-            event.preventDefault();
-            alert('Please enter a number between 1 and 365 for days to scan.');
-        }
-    });
+    if (form && daysInput) {
+        form.addEventListener('submit', function(event) {
+            const days = parseInt(daysInput.value);
+            if (isNaN(days) || days < 1 || days > 365) {
+                event.preventDefault();
+                alert('Please enter a number between 1 and 365 for days to scan.');
+            }
+        });
+    }
 });
 </script>
 {% endblock %} 

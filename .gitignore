@@ -2,6 +2,9 @@
 __pycache__/
 *.py[cod]
 *$py.class
+.pytest_cache/
+.coverage
+htmlcov/
 *.so
 .Python
 build/
@@ -22,30 +25,36 @@ wheels/
 
 # Virtual Environment
 venv/
-ENV/
 env/
+ENV/
 
 # IDE
-.idea/
 .vscode/
+.idea/
 *.swp
 *.swo
 
-# Flask
-instance/
-.webassets-cache
-
-# Credentials
-credentials.json
-token.pickle
-
-# Database
-*.db
-*.sqlite3
-
-# Logs
-*.log
-
 # OS
 .DS_Store
-Thumbs.db 
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Application specific
+*.db
+!celebrant.db
+token.pickle
+credentials.json
+cookies.txt
+*.log
+
+# Documentation
+docs/_build/
+*.zip
+test.*
+*_new.*
+media-project-documentation/
+media-project-documentation.zip 
