@@ -74,6 +74,7 @@ class Organization(db.Model):
     couples = relationship('Couple', back_populates='organization', cascade='all, delete-orphan')
     templates = relationship('CeremonyTemplate', back_populates='organization', cascade='all, delete-orphan')
     legal_forms = relationship('LegalFormSubmission', back_populates='organization', cascade='all, delete-orphan')
+    invoices = relationship('Invoice', back_populates='organization', cascade='all, delete-orphan')
     
     def __repr__(self):
         return f'<Organization {self.name}>'
@@ -232,6 +233,7 @@ class Couple(db.Model):
     celebrant = relationship('User', back_populates='couples')
     template = relationship('CeremonyTemplate', back_populates='couples')
     legal_forms = relationship('LegalFormSubmission', back_populates='couple', cascade='all, delete-orphan')
+    invoices = relationship('Invoice', back_populates='couple', cascade='all, delete-orphan')
     
     def __repr__(self):
         return f'<Couple {self.partner1_name} & {self.partner2_name}>'
@@ -521,6 +523,149 @@ class LegalFormSubmission(db.Model):
         
         self.reminder_schedule = json.dumps(reminders)
         return reminders
+
+
+class Invoice(db.Model):
+    """Invoice model for payment tracking with organization support."""
+    __tablename__ = 'invoices'
+    
+    id = Column(Integer, primary_key=True)
+    organization_id = Column(Integer, ForeignKey('organizations.id'), nullable=False)
+    couple_id = Column(Integer, ForeignKey('couples.id'), nullable=False)
+    
+    # Invoice details
+    invoice_number = Column(String(50), nullable=False, unique=True)
+    amount = Column(Float, nullable=False)
+    currency = Column(String(3), default='AUD', nullable=False)
+    description = Column(Text, nullable=True)
+    
+    # Payment details
+    due_date = Column(Date, nullable=False)
+    status = Column(String(20), default='pending', nullable=False)  # pending, paid, overdue, cancelled
+    paid_at = Column(DateTime, nullable=True)
+    paid_amount = Column(Float, nullable=True)
+    
+    # Proof of payment
+    proof_of_payment_path = Column(String(500), nullable=True)
+    proof_of_payment_filename = Column(String(255), nullable=True)
+    proof_of_payment_uploaded_at = Column(DateTime, nullable=True)
+    proof_of_payment_verified = Column(Boolean, default=False, nullable=False)
+    proof_of_payment_verified_by = Column(Integer, ForeignKey('users.id'), nullable=True)
+    proof_of_payment_verified_at = Column(DateTime, nullable=True)
+    
+    # Payment method
+    payment_method = Column(String(50), nullable=True)  # bank_transfer, cash, card, etc.
+    transaction_reference = Column(String(100), nullable=True)
+    
+    # Reminders
+    reminder_sent_7_days = Column(Boolean, default=False, nullable=False)
+    reminder_sent_1_day = Column(Boolean, default=False, nullable=False)
+    reminder_sent_overdue = Column(Boolean, default=False, nullable=False)
+    
+    # Metadata
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    organization = relationship('Organization')
+    couple = relationship('Couple')
+    verified_by = relationship('User', foreign_keys=[proof_of_payment_verified_by])
+    
+    # Indexes
+    __table_args__ = (
+        db.Index('idx_invoice_org', 'organization_id'),
+        db.Index('idx_invoice_couple', 'couple_id'),
+        db.Index('idx_invoice_status', 'status'),
+        db.Index('idx_invoice_due_date', 'due_date'),
+        db.Index('idx_invoice_number', 'invoice_number'),
+    )
+    
+    def __repr__(self):
+        return f'<Invoice {self.invoice_number}>'
+    
+    @property
+    def is_overdue(self):
+        """Check if invoice is overdue."""
+        if self.status == 'paid':
+            return False
+        return self.due_date < date.today()
+    
+    @property
+    def days_until_due(self):
+        """Get days until due date (negative if overdue)."""
+        if self.status == 'paid':
+            return 0
+        return (self.due_date - date.today()).days
+    
+    @property
+    def urgency_level(self):
+        """Get urgency level for reminders."""
+        if self.status == 'paid':
+            return 'none'
+        
+        days_until = self.days_until_due
+        
+        if days_until < 0:
+            return 'critical'  # Overdue
+        elif days_until <= 1:
+            return 'high'  # Due today or tomorrow
+        elif days_until <= 7:
+            return 'medium'  # Due within a week
+        else:
+            return 'low'  # Due later
+    
+    @property
+    def formatted_amount(self):
+        """Get formatted amount with currency."""
+        return f"{self.currency} {self.amount:.2f}"
+    
+    def generate_invoice_number(self):
+        """Generate a unique invoice number."""
+        if not self.invoice_number:
+            # Format: INV-YYYYMMDD-XXXX
+            today = datetime.now().strftime('%Y%m%d')
+            # Get count of invoices for today
+            count = Invoice.query.filter(
+                Invoice.organization_id == self.organization_id,
+                Invoice.created_at >= datetime.now().date()
+            ).count() + 1
+            self.invoice_number = f"INV-{today}-{count:04d}"
+        return self.invoice_number
+    
+    def mark_as_paid(self, paid_amount=None, verified_by=None):
+        """Mark invoice as paid."""
+        self.status = 'paid'
+        self.paid_at = datetime.utcnow()
+        self.paid_amount = paid_amount or self.amount
+        if verified_by:
+            self.proof_of_payment_verified = True
+            self.proof_of_payment_verified_by = verified_by
+            self.proof_of_payment_verified_at = datetime.utcnow()
+    
+    def needs_reminder(self, days_before):
+        """Check if reminder needs to be sent."""
+        if self.status == 'paid':
+            return False
+        
+        days_until = self.days_until_due
+        
+        if days_before == 7:
+            return days_until == 7 and not self.reminder_sent_7_days
+        elif days_before == 1:
+            return days_until == 1 and not self.reminder_sent_1_day
+        elif days_before == 0:  # Overdue
+            return days_until < 0 and not self.reminder_sent_overdue
+        
+        return False
+    
+    def mark_reminder_sent(self, days_before):
+        """Mark reminder as sent."""
+        if days_before == 7:
+            self.reminder_sent_7_days = True
+        elif days_before == 1:
+            self.reminder_sent_1_day = True
+        elif days_before == 0:  # Overdue
+            self.reminder_sent_overdue = True
 
 
 class ComplianceAlert(db.Model):

@@ -1,0 +1,298 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2>💰 Invoice #{{ invoice.invoice_number }}</h2>
+                    <p class="text-muted mb-0">
+                        {{ invoice.couple.full_names }} | 
+                        Due: {{ invoice.due_date.strftime('%d %B %Y') }}
+                    </p>
+                </div>
+                <div class="btn-group">
+                    <a href="{{ url_for('invoices.index') }}" class="btn btn-outline-primary">
+                        <i class="bi bi-arrow-left"></i> Back to Invoices
+                    </a>
+                    <a href="{{ url_for('couple_view', id=invoice.couple.id) }}" class="btn btn-outline-secondary">
+                        <i class="bi bi-people"></i> View Couple
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Invoice Details -->
+        <div class="col-md-8">
+            <div class="card-modern mb-4">
+                <div class="card-header">
+                    <h5><i class="bi bi-receipt"></i> Invoice Details</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="detail-group">
+                                <label class="detail-label">Invoice Number:</label>
+                                <span class="detail-value">{{ invoice.invoice_number }}</span>
+                            </div>
+                            <div class="detail-group">
+                                <label class="detail-label">Amount:</label>
+                                <span class="detail-value text-primary">${{ "%.2f"|format(invoice.amount) }}</span>
+                            </div>
+                            <div class="detail-group">
+                                <label class="detail-label">Currency:</label>
+                                <span class="detail-value">{{ invoice.currency }}</span>
+                            </div>
+                            <div class="detail-group">
+                                <label class="detail-label">Status:</label>
+                                <span class="badge bg-{{ 'success' if invoice.status == 'paid' else 'warning' if invoice.status == 'pending' else 'danger' }}">
+                                    {{ invoice.status.title() }}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="detail-group">
+                                <label class="detail-label">Due Date:</label>
+                                <span class="detail-value {% if invoice.is_overdue %}text-danger{% elif invoice.days_until_due <= 7 %}text-warning{% endif %}">
+                                    {{ invoice.due_date.strftime('%d %B %Y') }}
+                                </span>
+                            </div>
+                            <div class="detail-group">
+                                <label class="detail-label">Days Remaining:</label>
+                                <span class="detail-value {% if invoice.is_overdue %}text-danger{% elif invoice.days_until_due <= 7 %}text-warning{% endif %}">
+                                    {% if invoice.is_overdue %}
+                                    {{ abs(invoice.days_until_due) }} days overdue
+                                    {% else %}
+                                    {{ invoice.days_until_due }} days
+                                    {% endif %}
+                                </span>
+                            </div>
+                            <div class="detail-group">
+                                <label class="detail-label">Created:</label>
+                                <span class="detail-value">{{ invoice.created_at.strftime('%d %B %Y at %I:%M %p') }}</span>
+                            </div>
+                            {% if invoice.description %}
+                            <div class="detail-group">
+                                <label class="detail-label">Description:</label>
+                                <span class="detail-value">{{ invoice.description }}</span>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Couple Information -->
+            <div class="card-modern mb-4">
+                <div class="card-header">
+                    <h5><i class="bi bi-people"></i> Couple Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Partner 1</h6>
+                            <p><strong>{{ invoice.couple.partner1_name }}</strong></p>
+                            {% if invoice.couple.partner1_email %}
+                            <p><i class="bi bi-envelope"></i> {{ invoice.couple.partner1_email }}</p>
+                            {% endif %}
+                            {% if invoice.couple.partner1_phone %}
+                            <p><i class="bi bi-telephone"></i> {{ invoice.couple.partner1_phone }}</p>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Partner 2</h6>
+                            <p><strong>{{ invoice.couple.partner2_name }}</strong></p>
+                            {% if invoice.couple.partner2_email %}
+                            <p><i class="bi bi-envelope"></i> {{ invoice.couple.partner2_email }}</p>
+                            {% endif %}
+                            {% if invoice.couple.partner2_phone %}
+                            <p><i class="bi bi-telephone"></i> {{ invoice.couple.partner2_phone }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% if invoice.couple.ceremony_date or invoice.couple.ceremony_location %}
+                    <hr>
+                    <div class="row">
+                        {% if invoice.couple.ceremony_date %}
+                        <div class="col-md-6">
+                            <h6>Ceremony Date</h6>
+                            <p>{{ invoice.couple.ceremony_date.strftime('%d %B %Y') }}</p>
+                        </div>
+                        {% endif %}
+                        {% if invoice.couple.ceremony_location %}
+                        <div class="col-md-6">
+                            <h6>Ceremony Location</h6>
+                            <p>{{ invoice.couple.ceremony_location }}</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Payment Information -->
+        <div class="col-md-4">
+            <div class="card-modern mb-4">
+                <div class="card-header">
+                    <h5><i class="bi bi-credit-card"></i> Payment Information</h5>
+                </div>
+                <div class="card-body">
+                    {% if invoice.status == 'paid' %}
+                    <div class="alert alert-success">
+                        <i class="bi bi-check-circle"></i> <strong>Paid</strong>
+                        <br><small>Paid on {{ invoice.paid_at.strftime('%d %B %Y') }}</small>
+                        {% if invoice.paid_amount %}
+                        <br><small>Amount: ${{ "%.2f"|format(invoice.paid_amount) }}</small>
+                        {% endif %}
+                    </div>
+                    {% else %}
+                    <div class="alert alert-{{ 'danger' if invoice.is_overdue else 'warning' }}">
+                        <i class="bi bi-{{ 'exclamation-triangle' if invoice.is_overdue else 'clock' }}"></i> 
+                        <strong>{{ 'Overdue' if invoice.is_overdue else 'Pending Payment' }}</strong>
+                        {% if invoice.is_overdue %}
+                        <br><small>{{ abs(invoice.days_until_due) }} days overdue</small>
+                        {% else %}
+                        <br><small>{{ invoice.days_until_due }} days remaining</small>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+
+                    <!-- Payment Actions -->
+                    <div class="d-grid gap-2">
+                        {% if invoice.status != 'paid' %}
+                        <a href="{{ url_for('invoices.upload_proof', invoice_id=invoice.id) }}" 
+                           class="btn btn-success">
+                            <i class="bi bi-upload"></i> Upload Proof of Payment
+                        </a>
+                        {% endif %}
+                        
+                        {% if current_user.is_admin or current_user.role == 'owner' %}
+                        {% if invoice.status != 'paid' %}
+                        <button class="btn btn-warning" onclick="markAsPaid({{ invoice.id }})">
+                            <i class="bi bi-check-circle"></i> Mark as Paid
+                        </button>
+                        {% endif %}
+                        {% if invoice.proof_of_payment_path and not invoice.proof_of_payment_verified %}
+                        <button class="btn btn-info" onclick="verifyProof({{ invoice.id }})">
+                            <i class="bi bi-shield-check"></i> Verify Proof
+                        </button>
+                        {% endif %}
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Proof of Payment -->
+            {% if invoice.proof_of_payment_path %}
+            <div class="card-modern">
+                <div class="card-header">
+                    <h5><i class="bi bi-file-earmark-check"></i> Proof of Payment</h5>
+                </div>
+                <div class="card-body">
+                    <div class="proof-info">
+                        <p><strong>File:</strong> {{ invoice.proof_of_payment_filename }}</p>
+                        <p><strong>Uploaded:</strong> {{ invoice.proof_of_payment_uploaded_at.strftime('%d %B %Y at %I:%M %p') }}</p>
+                        
+                        {% if invoice.proof_of_payment_verified %}
+                        <div class="alert alert-success">
+                            <i class="bi bi-check-circle"></i> <strong>Verified</strong>
+                            <br><small>Verified on {{ invoice.proof_of_payment_verified_at.strftime('%d %B %Y') }}</small>
+                        </div>
+                        {% else %}
+                        <div class="alert alert-warning">
+                            <i class="bi bi-clock"></i> <strong>Pending Verification</strong>
+                        </div>
+                        {% endif %}
+                        
+                        <div class="d-grid">
+                            <a href="{{ url_for('static', filename='uploads/invoices/' + invoice.proof_of_payment_filename) }}" 
+                               class="btn btn-outline-primary" target="_blank">
+                                <i class="bi bi-eye"></i> View File
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Mark as Paid Modal -->
+<div class="modal fade" id="markPaidModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Mark Invoice as Paid</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="markPaidForm" method="POST">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="paid_amount" class="form-label">Paid Amount</label>
+                        <input type="number" class="form-control" id="paid_amount" name="paid_amount" 
+                               value="{{ invoice.amount }}" step="0.01" min="0" required>
+                        <div class="form-text">Enter the amount that was actually paid</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success">Mark as Paid</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function markAsPaid(invoiceId) {
+    const modal = new bootstrap.Modal(document.getElementById('markPaidModal'));
+    const form = document.getElementById('markPaidForm');
+    form.action = `/invoices/${invoiceId}/mark_paid`;
+    modal.show();
+}
+
+function verifyProof(invoiceId) {
+    if (confirm('Verify this proof of payment?')) {
+        fetch(`/invoices/${invoiceId}/verify_proof`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            }
+        }).then(response => {
+            if (response.ok) {
+                location.reload();
+            } else {
+                alert('Error verifying proof of payment');
+            }
+        });
+    }
+}
+</script>
+
+<style>
+.detail-group {
+    margin-bottom: 1rem;
+}
+
+.detail-label {
+    font-weight: 600;
+    color: var(--secondary-color);
+    display: block;
+    margin-bottom: 0.25rem;
+}
+
+.detail-value {
+    font-size: 1.1rem;
+}
+
+.proof-info p {
+    margin-bottom: 0.5rem;
+}
+</style>
+{% endblock %} 

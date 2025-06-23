@@ -1,6 +1,6 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, EmailField, TelField, DateField, TextAreaField, SelectField, BooleanField, PasswordField, DateTimeField
-from wtforms.validators import DataRequired, Email, Optional, Length
+from wtforms import StringField, EmailField, TelField, DateField, TextAreaField, SelectField, BooleanField, PasswordField, DateTimeField, FloatField
+from wtforms.validators import DataRequired, Email, Optional, Length, NumberRange
 from flask_wtf.file import FileField, FileAllowed, FileRequired
 
 class LoginForm(FlaskForm):
@@ -18,6 +18,7 @@ class CoupleForm(FlaskForm):
     
     ceremony_date = DateTimeField('Ceremony Date', format='%Y-%m-%d', validators=[Optional()])
     ceremony_location = StringField('Ceremony Location', validators=[Optional(), Length(max=200)])
+    travel_fee = FloatField('Travel Fee ($)', validators=[Optional(), NumberRange(min=0, max=10000)])
     status = SelectField('Status',
                         choices=[
                             ('Inquiry', 'Inquiry'),

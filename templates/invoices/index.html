@@ -1,0 +1,326 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2>💰 Invoice Management</h2>
+                <div class="btn-group">
+                    <a href="{{ url_for('invoices.create') }}" class="btn btn-primary-action">
+                        <i class="bi bi-plus-circle"></i> Create Invoice
+                    </a>
+                    <a href="{{ url_for('index') }}" class="btn btn-outline-primary">
+                        <i class="bi bi-house"></i> Back to Home
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card-modern">
+                <div class="card-body text-center">
+                    <div class="stat-icon text-primary">
+                        <i class="bi bi-receipt"></i>
+                    </div>
+                    <h3 class="stat-number">{{ total_invoices }}</h3>
+                    <p class="stat-label">Total Invoices</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card-modern">
+                <div class="card-body text-center">
+                    <div class="stat-icon text-success">
+                        <i class="bi bi-check-circle"></i>
+                    </div>
+                    <h3 class="stat-number">{{ paid_invoices }}</h3>
+                    <p class="stat-label">Paid</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card-modern">
+                <div class="card-body text-center">
+                    <div class="stat-icon text-warning">
+                        <i class="bi bi-clock"></i>
+                    </div>
+                    <h3 class="stat-number">{{ pending_invoices }}</h3>
+                    <p class="stat-label">Pending</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card-modern">
+                <div class="card-body text-center">
+                    <div class="stat-icon text-danger">
+                        <i class="bi bi-exclamation-triangle"></i>
+                    </div>
+                    <h3 class="stat-number">{{ overdue_invoices }}</h3>
+                    <p class="stat-label">Overdue</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Financial Summary -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card-modern">
+                <div class="card-header">
+                    <h5><i class="bi bi-cash-stack"></i> Financial Summary</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-6">
+                            <div class="financial-stat">
+                                <span class="label">Total Amount:</span>
+                                <span class="value text-primary">${{ "%.2f"|format(total_amount) }}</span>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="financial-stat">
+                                <span class="label">Paid Amount:</span>
+                                <span class="value text-success">${{ "%.2f"|format(paid_amount) }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-6">
+                            <div class="financial-stat">
+                                <span class="label">Outstanding:</span>
+                                <span class="value text-warning">${{ "%.2f"|format(total_amount - paid_amount) }}</span>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="financial-stat">
+                                <span class="label">Collection Rate:</span>
+                                <span class="value text-info">{{ "%.1f"|format((paid_amount / total_amount * 100) if total_amount > 0 else 0) }}%</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card-modern">
+                <div class="card-header">
+                    <h5><i class="bi bi-graph-up"></i> Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('invoices.create') }}" class="btn btn-primary-action">
+                            <i class="bi bi-plus-circle"></i> Create New Invoice
+                        </a>
+                        <button class="btn btn-outline-secondary" onclick="refreshStats()">
+                            <i class="bi bi-arrow-clockwise"></i> Refresh Statistics
+                        </button>
+                        <a href="#" class="btn btn-outline-info" onclick="exportInvoices()">
+                            <i class="bi bi-download"></i> Export Invoice Report
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Invoices Table -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card-modern">
+                <div class="card-header">
+                    <h5><i class="bi bi-table"></i> All Invoices</h5>
+                </div>
+                <div class="card-body">
+                    {% if invoices %}
+                    <div class="table-responsive">
+                        <table class="table table-modern">
+                            <thead>
+                                <tr>
+                                    <th>Invoice #</th>
+                                    <th>Couple</th>
+                                    <th>Amount</th>
+                                    <th>Due Date</th>
+                                    <th>Status</th>
+                                    <th>Proof of Payment</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for invoice in invoices %}
+                                <tr class="{% if invoice.is_overdue %}table-danger{% elif invoice.status == 'paid' %}table-success{% endif %}">
+                                    <td>
+                                        <strong>{{ invoice.invoice_number }}</strong>
+                                        {% if invoice.description %}
+                                        <br><small class="text-muted">{{ invoice.description[:50] }}{% if invoice.description|length > 50 %}...{% endif %}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <a href="{{ url_for('couple_view', id=invoice.couple.id) }}" class="text-decoration-none">
+                                            {{ invoice.couple.full_names }}
+                                        </a>
+                                        {% if invoice.couple.ceremony_date %}
+                                        <br><small class="text-muted">{{ invoice.couple.ceremony_date.strftime('%d %B %Y') }}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <strong>${{ "%.2f"|format(invoice.amount) }}</strong>
+                                        {% if invoice.paid_amount %}
+                                        <br><small class="text-success">Paid: ${{ "%.2f"|format(invoice.paid_amount) }}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="{% if invoice.is_overdue %}text-danger{% elif invoice.days_until_due <= 7 %}text-warning{% endif %}">
+                                            {{ invoice.due_date.strftime('%d %B %Y') }}
+                                        </span>
+                                        {% if invoice.days_until_due != 0 %}
+                                        <br><small class="text-muted">
+                                            {% if invoice.is_overdue %}
+                                            {{ abs(invoice.days_until_due) }} days overdue
+                                            {% else %}
+                                            {{ invoice.days_until_due }} days remaining
+                                            {% endif %}
+                                        </small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-{{ 'success' if invoice.status == 'paid' else 'warning' if invoice.status == 'pending' else 'danger' }}">
+                                            {{ invoice.status.title() }}
+                                        </span>
+                                        {% if invoice.proof_of_payment_verified %}
+                                        <br><small class="text-success"><i class="bi bi-check-circle"></i> Verified</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if invoice.proof_of_payment_path %}
+                                        <span class="text-success"><i class="bi bi-file-earmark-check"></i> Uploaded</span>
+                                        {% if invoice.proof_of_payment_verified %}
+                                        <br><small class="text-success">Verified</small>
+                                        {% else %}
+                                        <br><small class="text-warning">Pending verification</small>
+                                        {% endif %}
+                                        {% else %}
+                                        <span class="text-muted"><i class="bi bi-file-earmark-x"></i> Not uploaded</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{{ url_for('invoices.view', invoice_id=invoice.id) }}" 
+                                               class="btn btn-outline-primary" title="View Invoice">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                            {% if invoice.status != 'paid' %}
+                                            <a href="{{ url_for('invoices.upload_proof', invoice_id=invoice.id) }}" 
+                                               class="btn btn-outline-success" title="Upload Proof">
+                                                <i class="bi bi-upload"></i>
+                                            </a>
+                                            {% endif %}
+                                            {% if current_user.is_admin or current_user.role == 'owner' %}
+                                            {% if invoice.status != 'paid' %}
+                                            <button class="btn btn-outline-warning" title="Mark as Paid"
+                                                    onclick="markAsPaid({{ invoice.id }})">
+                                                <i class="bi bi-check-circle"></i>
+                                            </button>
+                                            {% endif %}
+                                            {% if invoice.proof_of_payment_path and not invoice.proof_of_payment_verified %}
+                                            <button class="btn btn-outline-info" title="Verify Proof"
+                                                    onclick="verifyProof({{ invoice.id }})">
+                                                <i class="bi bi-shield-check"></i>
+                                            </button>
+                                            {% endif %}
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <div class="empty-state">
+                            <i class="bi bi-receipt display-1 text-muted"></i>
+                            <h4 class="mt-3">No Invoices Yet</h4>
+                            <p class="text-muted">Create your first invoice to start tracking payments.</p>
+                            <a href="{{ url_for('invoices.create') }}" class="btn btn-primary-action">
+                                <i class="bi bi-plus-circle"></i> Create First Invoice
+                            </a>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Mark as Paid Modal -->
+<div class="modal fade" id="markPaidModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Mark Invoice as Paid</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="markPaidForm" method="POST">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="paid_amount" class="form-label">Paid Amount</label>
+                        <input type="number" class="form-control" id="paid_amount" name="paid_amount" 
+                               step="0.01" min="0" required>
+                        <div class="form-text">Enter the amount that was actually paid</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success">Mark as Paid</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function markAsPaid(invoiceId) {
+    const modal = new bootstrap.Modal(document.getElementById('markPaidModal'));
+    const form = document.getElementById('markPaidForm');
+    form.action = `/invoices/${invoiceId}/mark_paid`;
+    modal.show();
+}
+
+function verifyProof(invoiceId) {
+    if (confirm('Verify this proof of payment?')) {
+        fetch(`/invoices/${invoiceId}/verify_proof`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            }
+        }).then(response => {
+            if (response.ok) {
+                location.reload();
+            } else {
+                alert('Error verifying proof of payment');
+            }
+        });
+    }
+}
+
+function refreshStats() {
+    fetch('/invoices/api/stats')
+        .then(response => response.json())
+        .then(data => {
+            // Update statistics (you could implement this to update the page without reload)
+            location.reload();
+        });
+}
+
+function exportInvoices() {
+    // Implement export functionality
+    alert('Export functionality coming soon!');
+}
+</script>
+{% endblock %} 

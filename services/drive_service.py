@@ -105,7 +105,7 @@ class DriveService:
             )
 
     def search_template_files(self, folder_name: Optional[str] = None) -> List[Dict[str, Any]]:
-        """Search for template files in Google Drive.
+        """Search for template files in Google Drive supporting multiple formats.
         
         Args:
             folder_name: Optional folder name to search within
@@ -117,14 +117,25 @@ class DriveService:
             if not self.service:
                 self.ensure_authenticated()
 
-            # Build search query
+            # Build search query for multiple file types
             query_parts = []
             
-            # Search for Google Docs
-            query_parts.append("mimeType='application/vnd.google-apps.document'")
+            # Search for multiple file types
+            mime_types = [
+                "mimeType='application/vnd.google-apps.document'",  # Google Docs
+                "mimeType='application/vnd.google-apps.spreadsheet'",  # Google Sheets
+                "mimeType='application/vnd.openxmlformats-officedocument.wordprocessingml.document'",  # .docx
+                "mimeType='application/msword'",  # .doc
+                "mimeType='application/pdf'",  # .pdf
+                "mimeType='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'",  # .xlsx
+                "mimeType='application/vnd.ms-excel'"  # .xls
+            ]
+            
+            mime_query = "(" + " or ".join(mime_types) + ")"
+            query_parts.append(mime_query)
             
             # Search for files with template-related keywords in the name
-            template_keywords = ['template', 'ceremony', 'mc', 'vow', 'wedding', 'celebrant']
+            template_keywords = ['template', 'ceremony', 'mc', 'vow', 'wedding', 'celebrant', 'script', 'order of service']
             keyword_query = " or ".join([f"name contains '{keyword}'" for keyword in template_keywords])
             query_parts.append(f"({keyword_query})")
             
@@ -152,16 +163,17 @@ class DriveService:
             # Execute search
             results = self.service.files().list(
                 q=query,
-                fields="files(id, name, createdTime, modifiedTime, size, owners)",
+                fields="files(id, name, createdTime, modifiedTime, size, owners, mimeType)",
                 orderBy="modifiedTime desc",
                 pageSize=50
             ).execute()
             
             files = results.get('files', [])
             
-            # Format the results
+            # Format the results with proper type detection
             template_files = []
             for file in files:
+                file_type = self._get_file_type(file.get('mimeType', ''))
                 template_files.append({
                     'id': file['id'],
                     'name': file['name'],
@@ -169,7 +181,10 @@ class DriveService:
                     'modified_time': file.get('modifiedTime'),
                     'size': file.get('size'),
                     'owners': file.get('owners', []),
-                    'type': 'google_doc'
+                    'mime_type': file.get('mimeType'),
+                    'type': file_type,
+                    'can_preview': self._can_preview(file.get('mimeType', '')),
+                    'can_import': self._can_import(file.get('mimeType', ''))
                 })
             
             print(f"Found {len(template_files)} template files")
@@ -181,9 +196,41 @@ class DriveService:
         except Exception as e:
             logger.error(f"Unexpected error searching Drive: {e}")
             raise Exception(f"Failed to search Drive files: {str(e)}")
+    
+    def _get_file_type(self, mime_type: str) -> str:
+        """Get user-friendly file type from MIME type."""
+        type_mapping = {
+            'application/vnd.google-apps.document': 'google_doc',
+            'application/vnd.google-apps.spreadsheet': 'google_sheet',
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'word_docx',
+            'application/msword': 'word_doc',
+            'application/pdf': 'pdf',
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'excel_xlsx',
+            'application/vnd.ms-excel': 'excel_xls'
+        }
+        return type_mapping.get(mime_type, 'unknown')
+    
+    def _can_preview(self, mime_type: str) -> bool:
+        """Check if file type can be previewed."""
+        previewable_types = [
+            'application/vnd.google-apps.document',
+            'application/vnd.google-apps.spreadsheet',
+            'application/pdf'
+        ]
+        return mime_type in previewable_types
+    
+    def _can_import(self, mime_type: str) -> bool:
+        """Check if file type can be imported as template."""
+        importable_types = [
+            'application/vnd.google-apps.document',
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'application/msword',
+            'application/pdf'
+        ]
+        return mime_type in importable_types
 
     def get_file_content(self, file_id: str) -> Dict[str, Any]:
-        """Get the content of a Google Doc file.
+        """Get the content of a file supporting multiple formats.
         
         Args:
             file_id: The Google Drive file ID
@@ -195,26 +242,81 @@ class DriveService:
             if not self.service:
                 self.ensure_authenticated()
 
-            # Get file metadata
+            # Get file metadata including MIME type
             file_metadata = self.service.files().get(
                 fileId=file_id,
-                fields="id, name, createdTime, modifiedTime, size, owners"
+                fields="id, name, createdTime, modifiedTime, size, owners, mimeType"
             ).execute()
             
-            # Export the document as HTML
-            content = self.service.files().export(
-                fileId=file_id,
-                mimeType='text/html'
-            ).execute()
+            mime_type = file_metadata.get('mimeType', '')
+            file_type = self._get_file_type(mime_type)
             
-            # Decode the content
-            html_content = content.decode('utf-8')
-            
-            return {
-                'metadata': file_metadata,
-                'html_content': html_content,
-                'processed_content': self._process_html_content(html_content)
-            }
+            # Handle different file types
+            if mime_type == 'application/vnd.google-apps.document':
+                # Google Docs - export as HTML
+                content = self.service.files().export(
+                    fileId=file_id,
+                    mimeType='text/html'
+                ).execute()
+                html_content = content.decode('utf-8')
+                
+                return {
+                    'metadata': file_metadata,
+                    'file_type': file_type,
+                    'html_content': html_content,
+                    'processed_content': self._process_html_content(html_content)
+                }
+                
+            elif mime_type == 'application/vnd.google-apps.spreadsheet':
+                # Google Sheets - export as HTML
+                content = self.service.files().export(
+                    fileId=file_id,
+                    mimeType='text/html'
+                ).execute()
+                html_content = content.decode('utf-8')
+                
+                return {
+                    'metadata': file_metadata,
+                    'file_type': file_type,
+                    'html_content': html_content,
+                    'processed_content': self._process_spreadsheet_content(html_content)
+                }
+                
+            elif mime_type in ['application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/msword']:
+                # Word documents - download and extract text
+                content = self.service.files().get_media(fileId=file_id).execute()
+                
+                return {
+                    'metadata': file_metadata,
+                    'file_type': file_type,
+                    'raw_content': content,
+                    'processed_content': self._process_word_content(content, mime_type)
+                }
+                
+            elif mime_type == 'application/pdf':
+                # PDF files - download raw content
+                content = self.service.files().get_media(fileId=file_id).execute()
+                
+                return {
+                    'metadata': file_metadata,
+                    'file_type': file_type,
+                    'raw_content': content,
+                    'processed_content': self._process_pdf_content(content)
+                }
+                
+            elif mime_type in ['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.ms-excel']:
+                # Excel files - download and extract text
+                content = self.service.files().get_media(fileId=file_id).execute()
+                
+                return {
+                    'metadata': file_metadata,
+                    'file_type': file_type,
+                    'raw_content': content,
+                    'processed_content': self._process_excel_content(content, mime_type)
+                }
+                
+            else:
+                raise Exception(f"Unsupported file type: {mime_type}")
             
         except HttpError as error:
             logger.error(f"Drive API error getting file {file_id}: {error}")
@@ -396,4 +498,110 @@ class DriveService:
             
         except Exception as e:
             logger.error(f"Drive access check failed: {e}")
-            return False 
+            return False
+    
+    def _process_spreadsheet_content(self, html_content: str) -> str:
+        """Process Google Sheets HTML content."""
+        try:
+            soup = BeautifulSoup(html_content, 'html.parser')
+            
+            # Find tables and convert to readable format
+            tables = soup.find_all('table')
+            processed_content = ""
+            
+            for i, table in enumerate(tables):
+                if i > 0:
+                    processed_content += "\n\n"
+                
+                processed_content += f"Table {i+1}:\n"
+                processed_content += "=" * 20 + "\n"
+                
+                rows = table.find_all('tr')
+                for row in rows:
+                    cells = row.find_all(['td', 'th'])
+                    row_text = " | ".join(cell.get_text().strip() for cell in cells)
+                    if row_text.strip():
+                        processed_content += row_text + "\n"
+            
+            return processed_content or "Could not extract content from spreadsheet"
+            
+        except Exception as e:
+            logger.error(f"Error processing spreadsheet content: {e}")
+            return "Error processing spreadsheet content"
+    
+    def _process_word_content(self, content: bytes, mime_type: str) -> str:
+        """Process Word document content."""
+        try:
+            import io
+            from docx import Document
+            
+            if mime_type == 'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
+                # .docx files
+                doc = Document(io.BytesIO(content))
+                text_content = []
+                
+                for paragraph in doc.paragraphs:
+                    if paragraph.text.strip():
+                        text_content.append(paragraph.text)
+                
+                processed_content = '\n\n'.join(text_content)
+                return self._replace_names_with_placeholders(processed_content)
+            
+            else:
+                # .doc files - more complex, fallback to basic text extraction
+                # This would require additional libraries like python-docx2txt or antiword
+                return "Word .doc files require additional processing. Please convert to .docx or Google Docs format."
+                
+        except ImportError:
+            return "python-docx library required for Word document processing. Please install it or convert to Google Docs format."
+        except Exception as e:
+            logger.error(f"Error processing Word content: {e}")
+            return f"Error processing Word document: {str(e)}"
+    
+    def _process_pdf_content(self, content: bytes) -> str:
+        """Process PDF content."""
+        try:
+            import PyPDF2
+            import io
+            
+            pdf_reader = PyPDF2.PdfReader(io.BytesIO(content))
+            text_content = []
+            
+            for page in pdf_reader.pages:
+                page_text = page.extract_text()
+                if page_text.strip():
+                    text_content.append(page_text)
+            
+            processed_content = '\n\n'.join(text_content)
+            return self._replace_names_with_placeholders(processed_content)
+            
+        except ImportError:
+            return "PyPDF2 library required for PDF processing. Please install it or convert to Google Docs format."
+        except Exception as e:
+            logger.error(f"Error processing PDF content: {e}")
+            return f"Error processing PDF: {str(e)}"
+    
+    def _process_excel_content(self, content: bytes, mime_type: str) -> str:
+        """Process Excel content."""
+        try:
+            import pandas as pd
+            import io
+            
+            # Read Excel file
+            if mime_type == 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':
+                df = pd.read_excel(io.BytesIO(content), engine='openpyxl')
+            else:
+                df = pd.read_excel(io.BytesIO(content), engine='xlrd')
+            
+            # Convert to readable format
+            processed_content = "Excel Content:\n"
+            processed_content += "=" * 20 + "\n"
+            processed_content += df.to_string(index=False)
+            
+            return processed_content
+            
+        except ImportError:
+            return "pandas and openpyxl/xlrd libraries required for Excel processing. Please install them or convert to Google Sheets format."
+        except Exception as e:
+            logger.error(f"Error processing Excel content: {e}")
+            return f"Error processing Excel file: {str(e)}"

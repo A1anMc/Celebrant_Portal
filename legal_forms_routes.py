@@ -18,20 +18,93 @@ legal_forms_bp = Blueprint('legal_forms', __name__, url_prefix='/legal-forms')
 @legal_forms_bp.route('/dashboard')
 @login_required
 def compliance_dashboard():
-    """Compliance dashboard for celebrants."""
-    if not current_user.organization_id:
-        flash('Organization access required', 'error')
+    """Simplified legal forms compliance dashboard."""
+    try:
+        # Get couples for the current user's organization
+        couples = Couple.query.filter_by(celebrant_id=current_user.id).all()
+        
+        # Basic statistics
+        total_couples = len(couples)
+        total_forms = 0
+        completed_forms = 0
+        overdue_forms = 0
+        upcoming_forms = 0
+        
+        # Process couples data
+        couples_with_forms = []
+        for couple in couples:
+            # Get forms for this couple
+            couple_forms = LegalFormSubmission.query.filter_by(couple_id=couple.id).all()
+            
+            # Convert to simple format
+            forms_data = []
+            for form in couple_forms:
+                total_forms += 1
+                if form.status == 'completed':
+                    completed_forms += 1
+                if form.is_overdue:
+                    overdue_forms += 1
+                if form.days_until_deadline and form.days_until_deadline <= 7:
+                    upcoming_forms += 1
+                
+                forms_data.append({
+                    'id': form.id,
+                    'type': form.form_type,
+                    'name': form.form_type.replace('_', ' ').title(),
+                    'status': form.status,
+                    'is_overdue': form.is_overdue,
+                    'days_until_deadline': form.days_until_deadline,
+                    'is_mandatory': True,  # Assume all forms are mandatory for now
+                    'submitted_at': form.submitted_at,
+                    'is_validated': form.is_validated
+                })
+            
+            # Calculate simple compliance score
+            if couple_forms:
+                completed_count = len([f for f in couple_forms if f.status == 'completed'])
+                compliance_score = (completed_count / len(couple_forms) * 100) if couple_forms else 0
+            else:
+                compliance_score = 0
+            
+            couples_with_forms.append({
+                'couple': couple,
+                'forms': forms_data,
+                'compliance_score': compliance_score,
+                'overdue_count': len([f for f in couple_forms if f.is_overdue]),
+                'upcoming_count': len([f for f in couple_forms if f.days_until_deadline and f.days_until_deadline <= 7])
+            })
+        
+        # Calculate overall compliance rate
+        overall_compliance = (completed_forms / total_forms * 100) if total_forms > 0 else 100
+        
+        # Simplified dashboard data
+        dashboard_data = {
+            'success': True,
+            'statistics': {
+                'total_couples': total_couples,
+                'total_forms': total_forms,
+                'completed_forms': completed_forms,
+                'overdue_forms': overdue_forms,
+                'upcoming_forms': upcoming_forms,
+                'compliance_rate': round(overall_compliance, 1)
+            },
+            'couples': couples_with_forms,
+            'alerts': [],  # No alerts for simplified version
+            'form_types': {
+                'noim': {'name': 'Notice of Intended Marriage', 'mandatory': True},
+                'declaration': {'name': 'Declaration of No Impediment', 'mandatory': True},
+                'birth_certificate': {'name': 'Birth Certificate', 'mandatory': True},
+                'witness_details': {'name': 'Witness Details', 'mandatory': True},
+                'ceremony_details': {'name': 'Ceremony Details', 'mandatory': True}
+            }
+        }
+        
+        return render_template('legal_forms/dashboard.html', 
+                             data=dashboard_data,
+                             title='Legal Forms Dashboard')
+    except Exception as e:
+        flash(f'Error loading legal forms dashboard: {str(e)}', 'error')
         return redirect(url_for('index'))
-    
-    dashboard_data = LegalFormsService.get_compliance_dashboard(current_user.organization_id)
-    
-    if not dashboard_data['success']:
-        flash(f'Error loading dashboard: {dashboard_data["error"]}', 'error')
-        return redirect(url_for('index'))
-    
-    return render_template('legal_forms/dashboard.html', 
-                         data=dashboard_data,
-                         title='Legal Forms Compliance Dashboard')
 
 
 @legal_forms_bp.route('/couple/<int:couple_id>')
@@ -40,8 +113,10 @@ def couple_forms_status(couple_id):
     """View legal forms status for a specific couple."""
     couple = Couple.query.get_or_404(couple_id)
     
-    # Check organization access
-    if couple.organization_id != current_user.organization_id:
+    # Check organization access (handle legacy users)
+    user_org_id = getattr(current_user, 'organization_id', None)
+    couple_org_id = getattr(couple, 'organization_id', None)
+    if user_org_id and couple_org_id and couple_org_id != user_org_id:
         flash('Access denied', 'error')
         return redirect(url_for('legal_forms.compliance_dashboard'))
     
@@ -63,8 +138,10 @@ def initialize_couple_forms(couple_id):
     """Initialize legal forms for a couple."""
     couple = Couple.query.get_or_404(couple_id)
     
-    # Check organization access
-    if couple.organization_id != current_user.organization_id:
+    # Check organization access (handle legacy users)
+    user_org_id = getattr(current_user, 'organization_id', None)
+    couple_org_id = getattr(couple, 'organization_id', None)
+    if user_org_id and couple_org_id and couple_org_id != user_org_id:
         return jsonify({'success': False, 'error': 'Access denied'}), 403
     
     result = LegalFormsService.initialize_couple_forms(couple_id)
@@ -129,8 +206,10 @@ def validate_form(form_id):
     """Validate a submitted form."""
     form_submission = LegalFormSubmission.query.get_or_404(form_id)
     
-    # Check organization access
-    if form_submission.organization_id != current_user.organization_id:
+    # Check organization access (handle legacy users)
+    user_org_id = getattr(current_user, 'organization_id', None)
+    form_org_id = getattr(form_submission, 'organization_id', None)
+    if user_org_id and form_org_id and form_org_id != user_org_id:
         flash('Access denied', 'error')
         return redirect(url_for('legal_forms.compliance_dashboard'))
     
@@ -161,8 +240,10 @@ def send_manual_reminder(form_id):
     """Send manual reminder for a form."""
     form_submission = LegalFormSubmission.query.get_or_404(form_id)
     
-    # Check organization access
-    if form_submission.organization_id != current_user.organization_id:
+    # Check organization access (handle legacy users)
+    user_org_id = getattr(current_user, 'organization_id', None)
+    form_org_id = getattr(form_submission, 'organization_id', None)
+    if user_org_id and form_org_id and form_org_id != user_org_id:
         return jsonify({'success': False, 'error': 'Access denied'}), 403
     
     days_before_deadline = form_submission.days_until_deadline or 0
@@ -182,8 +263,10 @@ def resolve_alert(alert_id):
     """Resolve a compliance alert."""
     alert = ComplianceAlert.query.get_or_404(alert_id)
     
-    # Check organization access
-    if alert.organization_id != current_user.organization_id:
+    # Check organization access (handle legacy users)
+    user_org_id = getattr(current_user, 'organization_id', None)
+    alert_org_id = getattr(alert, 'organization_id', None)
+    if user_org_id and alert_org_id and alert_org_id != user_org_id:
         return jsonify({'success': False, 'error': 'Access denied'}), 403
     
     try:
@@ -203,10 +286,11 @@ def resolve_alert(alert_id):
 @login_required
 def api_dashboard_stats():
     """API endpoint for dashboard statistics."""
-    if not current_user.organization_id:
+    # Handle legacy users without organization_id
+    if not hasattr(current_user, 'organization_id') or not current_user.organization_id:
         return jsonify({'error': 'Organization access required'}), 403
     
-    dashboard_data = LegalFormsService.get_compliance_dashboard(current_user.organization_id)
+    dashboard_data = LegalFormsService.get_compliance_dashboard(getattr(current_user, 'organization_id', 1))
     
     if dashboard_data['success']:
         return jsonify(dashboard_data['statistics'])
@@ -218,10 +302,11 @@ def api_dashboard_stats():
 @login_required
 def api_upcoming_deadlines():
     """API endpoint for upcoming deadlines."""
-    if not current_user.organization_id:
+    # Handle legacy users without organization_id
+    if not hasattr(current_user, 'organization_id') or not current_user.organization_id:
         return jsonify({'error': 'Organization access required'}), 403
     
-    dashboard_data = LegalFormsService.get_compliance_dashboard(current_user.organization_id)
+    dashboard_data = LegalFormsService.get_compliance_dashboard(getattr(current_user, 'organization_id', 1))
     
     if dashboard_data['success']:
         deadlines = []
@@ -243,11 +328,12 @@ def api_upcoming_deadlines():
 @login_required
 def compliance_report():
     """Generate and display compliance report."""
-    if not current_user.organization_id:
-        flash('Organization access required', 'error')
+    # Handle legacy users without organization_id
+    if not hasattr(current_user, 'organization_id') or not current_user.organization_id:
+        flash('Organization access required. Please contact administrator.', 'error')
         return redirect(url_for('index'))
     
-    report_data = LegalFormsService.generate_compliance_report(current_user.organization_id)
+    report_data = LegalFormsService.generate_compliance_report(getattr(current_user, 'organization_id', 1))
     
     if not report_data['success']:
         flash(f'Error generating report: {report_data["error"]}', 'error')
@@ -262,12 +348,13 @@ def compliance_report():
 @login_required
 def api_forms_by_status():
     """API endpoint for forms grouped by status."""
-    if not current_user.organization_id:
+    # Handle legacy users without organization_id
+    if not hasattr(current_user, 'organization_id') or not current_user.organization_id:
         return jsonify({'error': 'Organization access required'}), 403
     
     try:
         forms = LegalFormSubmission.query.filter_by(
-            organization_id=current_user.organization_id
+            organization_id=getattr(current_user, 'organization_id', 1)
         ).all()
         
         status_counts = {}
@@ -289,8 +376,10 @@ def download_form(form_id):
     """Download submitted form file."""
     form_submission = LegalFormSubmission.query.get_or_404(form_id)
     
-    # Check organization access
-    if form_submission.organization_id != current_user.organization_id:
+    # Check organization access (handle legacy users)
+    user_org_id = getattr(current_user, 'organization_id', None)
+    form_org_id = getattr(form_submission, 'organization_id', None)
+    if user_org_id and form_org_id and form_org_id != user_org_id:
         flash('Access denied', 'error')
         return redirect(url_for('legal_forms.compliance_dashboard'))
     
@@ -326,10 +415,10 @@ def internal_error(error):
 @legal_forms_bp.context_processor
 def inject_legal_forms_data():
     """Inject common legal forms data into templates."""
-    if current_user.is_authenticated and current_user.organization_id:
+    if current_user.is_authenticated and hasattr(current_user, 'organization_id') and current_user.organization_id:
         # Get quick stats for sidebar/navigation
         try:
-            dashboard_data = LegalFormsService.get_compliance_dashboard(current_user.organization_id)
+            dashboard_data = LegalFormsService.get_compliance_dashboard(getattr(current_user, 'organization_id', 1))
             if dashboard_data['success']:
                 return {
                     'legal_forms_stats': dashboard_data['statistics'],

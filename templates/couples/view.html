@@ -147,10 +147,45 @@
                         <p class="mb-1">
                             <i class="bi bi-car-front"></i>
                             <strong>Travel Fee:</strong> 
-                            ${{ couple.travel_fee or 'Not set' }}
+                            ${{ "%.2f"|format(couple.travel_fee) if couple.travel_fee else 'Not calculated' }}
                         </p>
                     </div>
                 </div>
+                
+                {% if couple.ceremony_location %}
+                <!-- Travel Information -->
+                <hr>
+                <div class="row">
+                    <div class="col-12">
+                        <h6><i class="bi bi-geo-alt"></i> Travel Information</h6>
+                        <div class="row">
+                            <div class="col-md-8">
+                                <div class="d-flex align-items-center mb-2">
+                                    <i class="bi bi-map me-2"></i>
+                                    <span><strong>Venue:</strong> {{ couple.ceremony_location }}</span>
+                                </div>
+                                <div class="d-flex gap-3">
+                                    <button type="button" class="btn btn-sm btn-outline-primary" id="calculate-travel-btn" onclick="calculateTravel()">
+                                        <i class="bi bi-calculator"></i> Calculate Distance
+                                    </button>
+                                    <a href="https://www.google.com/maps/dir/Melbourne,+VIC,+Australia/{{ couple.ceremony_location | urlencode }}" 
+                                       target="_blank" class="btn btn-sm btn-outline-secondary">
+                                        <i class="bi bi-map"></i> View in Maps
+                                    </a>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div id="travel-info" style="display: none;">
+                                    <small class="text-muted">
+                                        <div><strong>Distance:</strong> <span id="travel-distance">-</span></div>
+                                        <div><strong>Time:</strong> <span id="travel-time">-</span></div>
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
                 
                 {% if couple.template %}
                 <hr>
@@ -346,6 +381,61 @@ function updateStatus(newStatus) {
         document.body.appendChild(form);
         form.submit();
     }
+}
+
+function calculateTravel() {
+    const button = document.getElementById('calculate-travel-btn');
+    const travelInfo = document.getElementById('travel-info');
+    
+    // Show loading state
+    button.innerHTML = '<i class="bi bi-hourglass-split"></i> Calculating...';
+    button.disabled = true;
+    
+    // Make API call to calculate travel information
+    fetch('/api/maps/update-couple-travel/{{ couple.id }}', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('meta[name=csrf-token]')?.getAttribute('content') || ''
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Update travel information display
+            document.getElementById('travel-distance').textContent = 
+                `${data.travel_info.distance_text} (${data.travel_info.distance_km} km)`;
+            document.getElementById('travel-time').textContent = data.travel_info.duration_text;
+            
+            // Show travel info
+            travelInfo.style.display = 'block';
+            
+            // Show success message
+            button.innerHTML = '<i class="bi bi-check-circle"></i> Updated!';
+            button.classList.add('btn-success');
+            button.classList.remove('btn-outline-primary');
+            
+            // Refresh page after 2 seconds to show updated travel fee
+            setTimeout(() => {
+                window.location.reload();
+            }, 2000);
+            
+        } else {
+            alert('Error calculating travel information: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to calculate travel information. Please try again.');
+    })
+    .finally(() => {
+        // Reset button after delay if not successful
+        setTimeout(() => {
+            if (!button.classList.contains('btn-success')) {
+                button.innerHTML = '<i class="bi bi-calculator"></i> Calculate Distance';
+                button.disabled = false;
+            }
+        }, 1000);
+    });
 }
 </script>
 {% endblock %} 

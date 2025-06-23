@@ -1,10 +1,9 @@
+# Marriage Celebrant Portal - Git Ignore Rules
+
 # Python
 __pycache__/
 *.py[cod]
 *$py.class
-.pytest_cache/
-.coverage
-htmlcov/
 *.so
 .Python
 build/
@@ -22,19 +21,36 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+MANIFEST
 
 # Virtual Environment
 venv/
 env/
 ENV/
+.venv/
 
-# IDE
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+
+# IDE & Editors
 .vscode/
 .idea/
 *.swp
 *.swo
+*~
+.project
+.pydevproject
 
-# OS
+# OS Generated Files
 .DS_Store
 .DS_Store?
 ._*
@@ -42,19 +58,65 @@ ENV/
 .Trashes
 ehthumbs.db
 Thumbs.db
+*.tmp
 
-# Application specific
+# Application Specific
+# Database files
 *.db
-!celebrant.db
-token.pickle
-credentials.json
-cookies.txt
-*.log
+database/*.db
+!database/.gitkeep
 
-# Documentation
+# Logs and temporary files  
+logs/
+temp/
+*.log
+*.log.*
+cookies.txt
+
+# Google API credentials and tokens
+token.pickle
+token.json
+credentials.json
+client_secret.json
+
+# Environment variables
+.env
+.env.local
+.env.production
+
+# Uploads and user content
+uploads/temp/
+uploads/*/temp/
+
+# Celery
+celerybeat-schedule*
+celerybeat.pid
+
+# Flask instance folder
+instance/
+
+# Documentation builds
 docs/_build/
+docs/site/
+
+# Backup files
+*.bak
+*.backup
+*.old
+
+# Archive files
 *.zip
-test.*
+*.tar.gz
+*.rar
+
+# Development artifacts
+test_*
+*_test.*
 *_new.*
+debug_*
+scratch_*
+
+# Project specific
 media-project-documentation/
-media-project-documentation.zip 
+media-project-documentation.zip
+.snapshots/ 

@@ -1,0 +1,199 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2>📤 Upload Proof of Payment</h2>
+                    <p class="text-muted mb-0">
+                        Invoice #{{ invoice.invoice_number }} - {{ invoice.couple.full_names }}
+                    </p>
+                </div>
+                <div class="btn-group">
+                    <a href="{{ url_for('invoices.view', invoice_id=invoice.id) }}" class="btn btn-outline-primary">
+                        <i class="bi bi-arrow-left"></i> Back to Invoice
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card-modern">
+                <div class="card-header">
+                    <h5><i class="bi bi-upload"></i> Upload Proof of Payment</h5>
+                </div>
+                <div class="card-body">
+                    <!-- Invoice Summary -->
+                    <div class="alert alert-info">
+                        <h6><i class="bi bi-info-circle"></i> Invoice Summary</h6>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <strong>Amount:</strong> ${{ "%.2f"|format(invoice.amount) }}<br>
+                                <strong>Due Date:</strong> {{ invoice.due_date.strftime('%d %B %Y') }}
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Status:</strong> 
+                                <span class="badge bg-{{ 'danger' if invoice.is_overdue else 'warning' }}">
+                                    {{ 'Overdue' if invoice.is_overdue else 'Pending' }}
+                                </span><br>
+                                <strong>Days:</strong> 
+                                {% if invoice.is_overdue %}
+                                {{ abs(invoice.days_until_due) }} days overdue
+                                {% else %}
+                                {{ invoice.days_until_due }} days remaining
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Upload Form -->
+                    <form method="POST" enctype="multipart/form-data">
+                        <div class="mb-4">
+                            <label for="proof_file" class="form-label">
+                                <strong>Select Proof of Payment File</strong>
+                            </label>
+                            <input type="file" class="form-control" id="proof_file" name="proof_file" 
+                                   accept=".pdf,.png,.jpg,.jpeg,.gif,.doc,.docx" required>
+                            <div class="form-text">
+                                <i class="bi bi-info-circle"></i> 
+                                Accepted formats: PDF, PNG, JPG, JPEG, GIF, DOC, DOCX
+                                <br>Maximum file size: 10MB
+                            </div>
+                        </div>
+
+                        <!-- Upload Instructions -->
+                        <div class="alert alert-warning">
+                            <h6><i class="bi bi-exclamation-triangle"></i> What to Upload</h6>
+                            <p class="mb-2">Please upload one of the following as proof of payment:</p>
+                            <ul class="mb-0">
+                                <li><strong>Bank transfer receipt</strong> - Screenshot or PDF from your banking app</li>
+                                <li><strong>Payment confirmation email</strong> - From your bank or payment provider</li>
+                                <li><strong>Cheque deposit slip</strong> - If paying by cheque</li>
+                                <li><strong>Cash receipt</strong> - If paying in person (signed by celebrant)</li>
+                            </ul>
+                        </div>
+
+                        <!-- Payment Details -->
+                        <div class="mb-4">
+                            <h6>Payment Details</h6>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="payment_method" class="form-label">Payment Method</label>
+                                        <select class="form-control" id="payment_method" name="payment_method">
+                                            <option value="">Select payment method</option>
+                                            <option value="bank_transfer">Bank Transfer</option>
+                                            <option value="credit_card">Credit Card</option>
+                                            <option value="debit_card">Debit Card</option>
+                                            <option value="cash">Cash</option>
+                                            <option value="cheque">Cheque</option>
+                                            <option value="other">Other</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="payment_date" class="form-label">Payment Date</label>
+                                        <input type="date" class="form-control" id="payment_date" name="payment_date" 
+                                               value="{{ today.strftime('%Y-%m-%d') }}">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="payment_notes" class="form-label">Additional Notes (Optional)</label>
+                                <textarea class="form-control" id="payment_notes" name="payment_notes" rows="3" 
+                                          placeholder="Any additional information about the payment..."></textarea>
+                            </div>
+                        </div>
+
+                        <!-- Submit Buttons -->
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{{ url_for('invoices.view', invoice_id=invoice.id) }}" 
+                               class="btn btn-secondary">
+                                <i class="bi bi-x-circle"></i> Cancel
+                            </a>
+                            <button type="submit" class="btn btn-success">
+                                <i class="bi bi-upload"></i> Upload Proof of Payment
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Existing Proof of Payment -->
+            {% if invoice.proof_of_payment_path %}
+            <div class="card-modern mt-4">
+                <div class="card-header">
+                    <h5><i class="bi bi-file-earmark-check"></i> Current Proof of Payment</h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <p><strong>Current file:</strong> {{ invoice.proof_of_payment_filename }}</p>
+                        <p><strong>Uploaded:</strong> {{ invoice.proof_of_payment_uploaded_at.strftime('%d %B %Y at %I:%M %p') }}</p>
+                        
+                        {% if invoice.proof_of_payment_verified %}
+                        <div class="alert alert-success mb-0">
+                            <i class="bi bi-check-circle"></i> <strong>Verified</strong>
+                        </div>
+                        {% else %}
+                        <div class="alert alert-warning mb-0">
+                            <i class="bi bi-clock"></i> <strong>Pending verification</strong>
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="d-grid">
+                        <a href="{{ url_for('static', filename='uploads/invoices/' + invoice.proof_of_payment_filename) }}" 
+                           class="btn btn-outline-primary" target="_blank">
+                            <i class="bi bi-eye"></i> View Current File
+                        </a>
+                    </div>
+                    
+                    <div class="alert alert-warning mt-3">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        <strong>Note:</strong> Uploading a new file will replace the current proof of payment.
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+// File size validation
+document.getElementById('proof_file').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    
+    if (file && file.size > maxSize) {
+        alert('File size must be less than 10MB');
+        this.value = '';
+    }
+});
+
+// Auto-fill payment date with today's date if empty
+document.addEventListener('DOMContentLoaded', function() {
+    const paymentDateField = document.getElementById('payment_date');
+    if (!paymentDateField.value) {
+        const today = new Date().toISOString().split('T')[0];
+        paymentDateField.value = today;
+    }
+});
+</script>
+
+<style>
+.alert ul {
+    padding-left: 1.5rem;
+}
+
+.alert ul li {
+    margin-bottom: 0.25rem;
+}
+</style>
+{% endblock %} 

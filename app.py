@@ -2,7 +2,7 @@
 import io
 import os
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta, date
 from typing import Optional, Any
 import csv
 import json
@@ -20,14 +20,19 @@ from sqlalchemy.sql.sqltypes import Integer, String, Text, Boolean, DateTime, Da
 from sqlalchemy.orm import relationship
 from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 import docx
+from flask_cors import CORS
 
 # Local imports
 from config import config
 from forms import LoginForm, CoupleForm, CeremonyTemplateForm
 from services.gmail_service import GmailService
+from models import db, User, Couple, CeremonyTemplate, ImportedName, ImportSession, Organization
 
 # Initialize Flask app
 app = Flask(__name__)
+
+# Enable CORS for React frontend
+CORS(app, origins=['http://localhost:3000'], supports_credentials=True)
 
 # Load configuration
 env = os.environ.get('FLASK_ENV', 'default')
@@ -49,11 +54,17 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Initialize extensions
-db = SQLAlchemy(app)
+db.init_app(app)
 migrate = Migrate(app, db)
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
+
+# Global context processor to inject 'today' into all templates
+@app.context_processor
+def inject_today():
+    """Inject today's date into all templates."""
+    return {'today': datetime.today().date()}
 
 # Error handling decorator
 def handle_db_errors(f):
@@ -79,174 +90,10 @@ def handle_db_errors(f):
             return redirect(request.referrer or url_for('index'))
     return decorated_function
 
-# Models
-class User(UserMixin, db.Model):
-    """User model for authentication."""
-    __tablename__ = 'users'
-    
-    id = Column(Integer, primary_key=True)
-    username = Column(String(64), unique=True, nullable=False)
-    password_hash = Column(String(128), nullable=False)
-    email = Column(String(120), unique=True, nullable=True)
-    name = Column(String(100), nullable=True)
-    is_admin = Column(Boolean, default=False, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
-    # Add indexes for performance
-    __table_args__ = (
-        db.Index('idx_user_email', 'email'),
-        db.Index('idx_user_username', 'username'),
-    )
-    
-    # Relationships
-    couples = relationship('Couple', back_populates='celebrant')
-    
-    def set_password(self, password):
-        self.password_hash = generate_password_hash(password)
-        
-    def check_password(self, password):
-        return check_password_hash(self.password_hash, password)
-
-class Couple(db.Model):
-    """Model for couples getting married."""
-    __tablename__ = 'couples'
-    
-    id = Column(Integer, primary_key=True)
-    partner1_name = Column(String(100), nullable=False)
-    partner1_email = Column(String(120), nullable=True)
-    partner1_phone = Column(String(20), nullable=True)
-    partner2_name = Column(String(100), nullable=False)
-    partner2_email = Column(String(120), nullable=True)
-    partner2_phone = Column(String(20), nullable=True)
-    ceremony_date = Column(Date, nullable=True)
-    ceremony_time = Column(String(50), nullable=True)
-    ceremony_location = Column(String(200), nullable=True)
-    ceremony_type = Column(String(50), nullable=True)
-    guest_count = Column(Integer, nullable=True)
-    package = Column(String(50), nullable=True)
-    fee = Column(Float, nullable=True)
-    travel_fee = Column(Float, nullable=True)
-    vows = Column(Text, nullable=True)
-    notes = Column(Text, nullable=True)
-    status = Column(String(50), default='Inquiry')
-    confirmed = Column(Boolean, default=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
-    # Foreign Keys
-    celebrant_id = Column(Integer, ForeignKey('users.id'), nullable=True)
-    template_id = Column(Integer, ForeignKey('ceremony_templates.id'), nullable=True)
-    
-    # Add indexes for performance
-    __table_args__ = (
-        db.Index('idx_partner_names', 'partner1_name', 'partner2_name'),
-        db.Index('idx_ceremony_date', 'ceremony_date'),
-        db.Index('idx_couple_status', 'status'),
-        db.Index('idx_couple_celebrant', 'celebrant_id'),
-        db.Index('idx_partner_emails', 'partner1_email', 'partner2_email'),
-    )
-    
-    # Relationships
-    celebrant = relationship('User', back_populates='couples')
-    template = relationship('CeremonyTemplate', back_populates='couples')
-
-class CeremonyTemplate(db.Model):
-    """Model for ceremony templates."""
-    __tablename__ = 'ceremony_templates'
-    
-    id = Column(Integer, primary_key=True)
-    name = Column(String(100), nullable=False)
-    description = Column(Text, nullable=True)
-    content = Column(Text, nullable=False)
-    ceremony_type = Column(String(50), nullable=True)
-    is_default = Column(Boolean, default=False, nullable=True)
-    celebrant_id = Column(Integer, ForeignKey('users.id'), nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
-    # Add indexes for performance
-    __table_args__ = (
-        db.Index('idx_template_type', 'ceremony_type'),
-        db.Index('idx_template_name', 'name'),
-        db.Index('idx_template_celebrant', 'celebrant_id'),
-    )
-    
-    # Relationships
-    couples = relationship('Couple', back_populates='template')
-    celebrant = relationship('User', backref='templates')
-
-class ImportedName(db.Model):
-    """Model for storing imported names to scan for."""
-    __tablename__ = 'imported_names'
-    
-    id = Column(Integer, primary_key=True)
-    partner1_name = Column(String(100), nullable=True)
-    partner2_name = Column(String(100), nullable=True)
-    ceremony_date = Column(Date, nullable=True)
-    location = Column(String(255), nullable=True)
-    guest_count = Column(String(50), nullable=True)
-    ceremony_time = Column(String(50), nullable=True)
-    role = Column(String(100), nullable=True)
-    package = Column(String(100), nullable=True)
-    fee = Column(String(100), nullable=True)
-    travel_fee = Column(String(100), nullable=True)
-    vows = Column(String(100), nullable=True)
-    confirmed = Column(String(50), nullable=True)
-    notes = Column(Text, nullable=True)
-    is_processed = Column(Boolean, default=False, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
-    # Add indexes for performance
-    __table_args__ = (
-        db.Index('idx_imported_names', 'partner1_name', 'partner2_name'),
-        db.Index('idx_imported_processed', 'is_processed'),
-        db.Index('idx_imported_date', 'ceremony_date'),
-    )
-
-class ImportSession(db.Model):
-    """Model for tracking CSV import sessions."""
-    __tablename__ = 'import_sessions'
-    
-    id = Column(Integer, primary_key=True)
-    filename = Column(String(255), nullable=False)
-    total_rows = Column(Integer, nullable=False)
-    processed_rows = Column(Integer, default=0)
-    chunk_size = Column(Integer, default=100)
-    current_chunk = Column(Integer, default=0)
-    status = Column(String(50), default='pending')  # pending, processing, paused, completed, failed
-    error_count = Column(Integer, default=0)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    column_mapping = Column(Text, nullable=True)  # JSON string of column mappings
-    errors = Column(Text, nullable=True)  # JSON string of errors
-    
-    # Add indexes for performance
-    __table_args__ = (
-        db.Index('idx_import_status', 'status'),
-        db.Index('idx_import_created', 'created_at'),
-    )
-    
-    def to_dict(self):
-        return {
-            'id': self.id,
-            'filename': self.filename,
-            'total_rows': self.total_rows,
-            'processed_rows': self.processed_rows,
-            'chunk_size': self.chunk_size,
-            'current_chunk': self.current_chunk,
-            'status': self.status,
-            'error_count': self.error_count,
-            'progress_percentage': (self.processed_rows / self.total_rows * 100) if self.total_rows > 0 else 0,
-            'created_at': self.created_at.isoformat() if self.created_at else None,
-            'updated_at': self.updated_at.isoformat() if self.updated_at else None
-        }
-
 @login_manager.user_loader
 def load_user(user_id):
     """Load user by ID."""
-    return User.query.get(int(user_id))
+    return db.session.get(User, int(user_id))
 
 # Routes
 @app.route('/')
@@ -265,11 +112,22 @@ def login():
     """Handle user login."""
     form = LoginForm()
     if form.validate_on_submit():
+        # Find user by email (across all organizations for now)
         user = User.query.filter_by(email=form.email.data).first()
         if user and user.check_password(form.password.data):
-            login_user(user)
-            return redirect(url_for('index'))
-        flash('Invalid email or password')
+            if user.is_active:
+                login_user(user)
+                logger.info(f"User logged in: {user.email}")
+                return redirect(url_for('index'))
+            else:
+                flash('Account is deactivated. Please contact administrator.')
+        else:
+            flash('Invalid email or password')
+            logger.warning(f"Failed login attempt for email: {form.email.data}")
+    elif form.errors:
+        # Log form validation errors
+        logger.warning(f"Form validation errors: {form.errors}")
+    
     return render_template('login.html', form=form)
 
 @app.route('/logout')
@@ -456,12 +314,9 @@ def template_edit(id: int):
                 celebrant_id=current_user.id,
                 ceremony_type=template.ceremony_type,
                 is_default=True
-            ).filter(CeremonyTemplate.id != template.id).update({'is_default': False})
+            ).update({'is_default': False})
         
         template.is_default = form.is_default.data
-        if not uploaded_content:  # Only update content if no file was uploaded
-            template.content = form.content.data
-            
         db.session.commit()
         logger.info(f"Template updated: {template.name}")
         flash('Template updated successfully!', 'success')
@@ -1124,31 +979,396 @@ def health_check():
 @app.route('/api/stats')
 @login_required
 def get_stats():
-    """Get application statistics."""
+    """Get dashboard statistics."""
     try:
-        stats = {
-            'couples': {
-                'total': Couple.query.filter_by(celebrant_id=current_user.id).count(),
-                'confirmed': Couple.query.filter_by(celebrant_id=current_user.id, status='Confirmed').count(),
-                'completed': Couple.query.filter_by(celebrant_id=current_user.id, status='Completed').count(),
-                'inquiries': Couple.query.filter_by(celebrant_id=current_user.id, status='Inquiry').count(),
-                'cancelled': Couple.query.filter_by(celebrant_id=current_user.id, status='Cancelled').count()
-            },
-            'templates': {
-                'total': CeremonyTemplate.query.filter_by(celebrant_id=current_user.id).count(),
-                'default': CeremonyTemplate.query.filter_by(celebrant_id=current_user.id, is_default=True).count()
-            },
-            'imports': {
-                'total_sessions': ImportSession.query.count(),
-                'active_sessions': ImportSession.query.filter(ImportSession.status.in_(['processing', 'paused'])).count(),
-                'unprocessed_names': ImportedName.query.filter_by(is_processed=False).count()
-            }
-        }
+        # Get counts for current user's organization
+        total_couples = Couple.query.filter_by(celebrant_id=current_user.id).count()
+        upcoming_couples = Couple.query.filter_by(celebrant_id=current_user.id)\
+            .filter(Couple.status.in_(['Confirmed', 'Inquiry']))\
+            .filter(Couple.ceremony_date >= datetime.now().date())\
+            .count()
+        completed_couples = Couple.query.filter_by(celebrant_id=current_user.id)\
+            .filter(Couple.status == 'Completed')\
+            .count()
+        total_templates = CeremonyTemplate.query.filter_by(celebrant_id=current_user.id).count()
         
-        return jsonify(stats)
+        # Get upcoming ceremonies (next 30 days)
+        thirty_days_from_now = datetime.now().date() + timedelta(days=30)
+        upcoming_ceremonies = Couple.query.filter_by(celebrant_id=current_user.id)\
+            .filter(Couple.ceremony_date >= datetime.now().date())\
+            .filter(Couple.ceremony_date <= thirty_days_from_now)\
+            .filter(Couple.status.in_(['Confirmed', 'Inquiry']))\
+            .order_by(Couple.ceremony_date.asc())\
+            .limit(5)\
+            .all()
+        
+        return jsonify({
+            'success': True,
+            'data': {
+                'total_couples': total_couples,
+                'upcoming_couples': upcoming_couples,
+                'completed_couples': completed_couples,
+                'total_templates': total_templates,
+                'upcoming_ceremonies': [
+                    {
+                        'id': couple.id,
+                        'partner1_name': couple.partner1_name,
+                        'partner2_name': couple.partner2_name,
+                        'ceremony_date': couple.ceremony_date.isoformat() if couple.ceremony_date else None,
+                        'ceremony_location': couple.ceremony_location,
+                        'status': couple.status
+                    }
+                    for couple in upcoming_ceremonies
+                ]
+            }
+        })
     except Exception as e:
-        logger.error(f"Stats retrieval failed: {str(e)}")
-        return jsonify({'error': str(e)}), 500
+        logger.error(f"Error getting stats: {str(e)}")
+        return jsonify({'success': False, 'error': 'Failed to get statistics'}), 500
+
+# API endpoints for React frontend
+@app.route('/api/couples', methods=['GET'])
+@login_required
+def api_get_couples():
+    """Get couples as JSON for React frontend."""
+    try:
+        status = request.args.get('status')
+        search = request.args.get('search')
+        page = int(request.args.get('page', 1))
+        limit = int(request.args.get('limit', 20))
+        
+        query = Couple.query.filter_by(celebrant_id=current_user.id)
+        
+        if status:
+            query = query.filter(Couple.status == status)
+        
+        if search:
+            search_term = f"%{search}%"
+            query = query.filter(
+                db.or_(
+                    Couple.partner1_name.ilike(search_term),
+                    Couple.partner2_name.ilike(search_term),
+                    Couple.ceremony_location.ilike(search_term)
+                )
+            )
+        
+        couples = query.order_by(Couple.ceremony_date.asc()).paginate(
+            page=page, per_page=limit, error_out=False
+        )
+        
+        return jsonify({
+            'success': True,
+            'data': [
+                {
+                    'id': couple.id,
+                    'partner1_name': couple.partner1_name,
+                    'partner1_email': couple.partner1_email,
+                    'partner1_phone': couple.partner1_phone,
+                    'partner2_name': couple.partner2_name,
+                    'partner2_email': couple.partner2_email,
+                    'partner2_phone': couple.partner2_phone,
+                    'ceremony_date': couple.ceremony_date.isoformat() if couple.ceremony_date else None,
+                    'ceremony_time': couple.ceremony_time,
+                    'ceremony_location': couple.ceremony_location,
+                    'ceremony_type': couple.ceremony_type,
+                    'guest_count': couple.guest_count,
+                    'package': couple.package,
+                    'fee': couple.fee,
+                    'travel_fee': couple.travel_fee,
+                    'vows': couple.vows,
+                    'notes': couple.notes,
+                    'status': couple.status,
+                    'confirmed': couple.confirmed,
+                    'created_at': couple.created_at.isoformat() if couple.created_at else None,
+                    'updated_at': couple.updated_at.isoformat() if couple.updated_at else None
+                }
+                for couple in couples.items
+            ],
+            'pagination': {
+                'page': page,
+                'per_page': limit,
+                'total': couples.total,
+                'pages': couples.pages
+            }
+        })
+    except Exception as e:
+        logger.error(f"Error getting couples: {str(e)}")
+        return jsonify({'success': False, 'error': 'Failed to get couples'}), 500
+
+@app.route('/api/couples/<int:id>', methods=['GET'])
+@login_required
+def api_get_couple(id):
+    """Get a single couple as JSON."""
+    try:
+        couple = Couple.query.filter_by(id=id, celebrant_id=current_user.id).first()
+        if not couple:
+            return jsonify({'success': False, 'error': 'Couple not found'}), 404
+        
+        return jsonify({
+            'success': True,
+            'data': {
+                'id': couple.id,
+                'partner1_name': couple.partner1_name,
+                'partner1_email': couple.partner1_email,
+                'partner1_phone': couple.partner1_phone,
+                'partner2_name': couple.partner2_name,
+                'partner2_email': couple.partner2_email,
+                'partner2_phone': couple.partner2_phone,
+                'ceremony_date': couple.ceremony_date.isoformat() if couple.ceremony_date else None,
+                'ceremony_time': couple.ceremony_time,
+                'ceremony_location': couple.ceremony_location,
+                'ceremony_type': couple.ceremony_type,
+                'guest_count': couple.guest_count,
+                'package': couple.package,
+                'fee': couple.fee,
+                'travel_fee': couple.travel_fee,
+                'vows': couple.vows,
+                'notes': couple.notes,
+                'status': couple.status,
+                'confirmed': couple.confirmed,
+                'created_at': couple.created_at.isoformat() if couple.created_at else None,
+                'updated_at': couple.updated_at.isoformat() if couple.updated_at else None
+            }
+        })
+    except Exception as e:
+        logger.error(f"Error getting couple {id}: {str(e)}")
+        return jsonify({'success': False, 'error': 'Failed to get couple'}), 500
+
+@app.route('/api/couples', methods=['POST'])
+@login_required
+def api_create_couple():
+    """Create a new couple via API."""
+    try:
+        data = request.get_json()
+        
+        couple = Couple(
+            partner1_name=data['partner1_name'],
+            partner1_email=data.get('partner1_email'),
+            partner1_phone=data.get('partner1_phone'),
+            partner2_name=data['partner2_name'],
+            partner2_email=data.get('partner2_email'),
+            partner2_phone=data.get('partner2_phone'),
+            ceremony_date=datetime.strptime(data['ceremony_date'], '%Y-%m-%d').date() if data.get('ceremony_date') else None,
+            ceremony_time=data.get('ceremony_time'),
+            ceremony_location=data.get('ceremony_location'),
+            ceremony_type=data.get('ceremony_type'),
+            guest_count=data.get('guest_count'),
+            package=data.get('package'),
+            fee=data.get('fee'),
+            travel_fee=data.get('travel_fee'),
+            vows=data.get('vows'),
+            notes=data.get('notes'),
+            status=data.get('status', 'Inquiry'),
+            confirmed=data.get('confirmed', False),
+            celebrant_id=current_user.id
+        )
+        
+        db.session.add(couple)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'data': {
+                'id': couple.id,
+                'partner1_name': couple.partner1_name,
+                'partner2_name': couple.partner2_name,
+                'status': couple.status
+            }
+        })
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error creating couple: {str(e)}")
+        return jsonify({'success': False, 'error': 'Failed to create couple'}), 500
+
+@app.route('/api/couples/<int:id>', methods=['PUT'])
+@login_required
+def api_update_couple(id):
+    """Update a couple via API."""
+    try:
+        couple = Couple.query.filter_by(id=id, celebrant_id=current_user.id).first()
+        if not couple:
+            return jsonify({'success': False, 'error': 'Couple not found'}), 404
+        
+        data = request.get_json()
+        
+        # Update fields
+        for field, value in data.items():
+            if hasattr(couple, field):
+                if field == 'ceremony_date' and value:
+                    setattr(couple, field, datetime.strptime(value, '%Y-%m-%d').date())
+                else:
+                    setattr(couple, field, value)
+        
+        couple.updated_at = datetime.utcnow()
+        db.session.commit()
+        
+        return jsonify({'success': True, 'data': {'id': couple.id}})
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error updating couple {id}: {str(e)}")
+        return jsonify({'success': False, 'error': 'Failed to update couple'}), 500
+
+@app.route('/api/couples/<int:id>', methods=['DELETE'])
+@login_required
+def api_delete_couple(id):
+    """Delete a couple via API."""
+    try:
+        couple = Couple.query.filter_by(id=id, celebrant_id=current_user.id).first()
+        if not couple:
+            return jsonify({'success': False, 'error': 'Couple not found'}), 404
+        
+        db.session.delete(couple)
+        db.session.commit()
+        
+        return jsonify({'success': True})
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error deleting couple {id}: {str(e)}")
+        return jsonify({'success': False, 'error': 'Failed to delete couple'}), 500
+
+@app.route('/api/templates', methods=['GET'])
+@login_required
+def api_get_templates():
+    """Get templates as JSON for React frontend."""
+    try:
+        ceremony_type = request.args.get('ceremony_type')
+        search = request.args.get('search')
+        
+        query = CeremonyTemplate.query.filter_by(celebrant_id=current_user.id)
+        
+        if ceremony_type:
+            query = query.filter(CeremonyTemplate.ceremony_type == ceremony_type)
+        
+        if search:
+            search_term = f"%{search}%"
+            query = query.filter(
+                db.or_(
+                    CeremonyTemplate.name.ilike(search_term),
+                    CeremonyTemplate.description.ilike(search_term)
+                )
+            )
+        
+        templates = query.order_by(CeremonyTemplate.name.asc()).all()
+        
+        return jsonify({
+            'success': True,
+            'data': [
+                {
+                    'id': template.id,
+                    'name': template.name,
+                    'description': template.description,
+                    'content': template.content,
+                    'ceremony_type': template.ceremony_type,
+                    'is_default': template.is_default,
+                    'created_at': template.created_at.isoformat() if template.created_at else None,
+                    'updated_at': template.updated_at.isoformat() if template.updated_at else None
+                }
+                for template in templates
+            ]
+        })
+    except Exception as e:
+        logger.error(f"Error getting templates: {str(e)}")
+        return jsonify({'success': False, 'error': 'Failed to get templates'}), 500
+
+@app.route('/api/templates/<int:id>', methods=['GET'])
+@login_required
+def api_get_template(id):
+    """Get a single template as JSON."""
+    try:
+        template = CeremonyTemplate.query.filter_by(id=id, celebrant_id=current_user.id).first()
+        if not template:
+            return jsonify({'success': False, 'error': 'Template not found'}), 404
+        
+        return jsonify({
+            'success': True,
+            'data': {
+                'id': template.id,
+                'name': template.name,
+                'description': template.description,
+                'content': template.content,
+                'ceremony_type': template.ceremony_type,
+                'is_default': template.is_default,
+                'created_at': template.created_at.isoformat() if template.created_at else None,
+                'updated_at': template.updated_at.isoformat() if template.updated_at else None
+            }
+        })
+    except Exception as e:
+        logger.error(f"Error getting template {id}: {str(e)}")
+        return jsonify({'success': False, 'error': 'Failed to get template'}), 500
+
+@app.route('/api/templates', methods=['POST'])
+@login_required
+def api_create_template():
+    """Create a new template via API."""
+    try:
+        data = request.get_json()
+        
+        template = CeremonyTemplate(
+            name=data['name'],
+            description=data.get('description'),
+            content=data['content'],
+            ceremony_type=data.get('ceremony_type'),
+            is_default=data.get('is_default', False),
+            celebrant_id=current_user.id
+        )
+        
+        db.session.add(template)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'data': {
+                'id': template.id,
+                'name': template.name
+            }
+        })
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error creating template: {str(e)}")
+        return jsonify({'success': False, 'error': 'Failed to create template'}), 500
+
+@app.route('/api/templates/<int:id>', methods=['PUT'])
+@login_required
+def api_update_template(id):
+    """Update a template via API."""
+    try:
+        template = CeremonyTemplate.query.filter_by(id=id, celebrant_id=current_user.id).first()
+        if not template:
+            return jsonify({'success': False, 'error': 'Template not found'}), 404
+        
+        data = request.get_json()
+        
+        # Update fields
+        for field, value in data.items():
+            if hasattr(template, field):
+                setattr(template, field, value)
+        
+        template.updated_at = datetime.utcnow()
+        db.session.commit()
+        
+        return jsonify({'success': True, 'data': {'id': template.id}})
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error updating template {id}: {str(e)}")
+        return jsonify({'success': False, 'error': 'Failed to update template'}), 500
+
+@app.route('/api/templates/<int:id>', methods=['DELETE'])
+@login_required
+def api_delete_template(id):
+    """Delete a template via API."""
+    try:
+        template = CeremonyTemplate.query.filter_by(id=id, celebrant_id=current_user.id).first()
+        if not template:
+            return jsonify({'success': False, 'error': 'Template not found'}), 404
+        
+        db.session.delete(template)
+        db.session.commit()
+        
+        return jsonify({'success': True})
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error deleting template {id}: {str(e)}")
+        return jsonify({'success': False, 'error': 'Failed to delete template'}), 500
 
 # Error handlers
 @app.errorhandler(404)
@@ -1179,10 +1399,214 @@ def forbidden_error(error):
 # Register legal forms blueprint
 try:
     from legal_forms_routes import legal_forms_bp
+    from legal_forms_service import LegalFormsService
     app.register_blueprint(legal_forms_bp, url_prefix='/legal-forms')
     logger.info("Legal forms blueprint registered successfully")
+    
+    # Add context processor for legal forms alerts
+    @app.context_processor
+    def inject_legal_forms_alerts():
+        """Inject legal forms alert count into all templates."""
+        if current_user.is_authenticated:
+            try:
+                # Handle legacy users without organization_id
+                if hasattr(current_user, 'organization_id') and current_user.organization_id:
+                    service = LegalFormsService()
+                    urgent_count = service.get_urgent_alerts_count(current_user.organization_id)
+                    return {'urgent_alerts_count': urgent_count}
+                else:
+                    return {'urgent_alerts_count': 0}
+            except Exception as e:
+                logger.warning(f"Error getting urgent alerts count: {e}")
+                return {'urgent_alerts_count': 0}
+        return {'urgent_alerts_count': 0}
+        
 except ImportError as e:
     logger.warning(f"Could not register legal forms blueprint: {e}")
+    
+    # Provide default context processor if legal forms not available
+    @app.context_processor
+    def inject_default_alerts():
+        return {'urgent_alerts_count': 0}
+
+# Invoice Routes
+try:
+    from invoice_routes import invoice_bp
+    app.register_blueprint(invoice_bp, url_prefix='/invoices')
+    logger.info("Invoice blueprint registered successfully")
+except ImportError as e:
+    logger.warning(f"Could not register invoice blueprint: {e}")
+
+# Google Maps Integration Routes
+try:
+    from services.maps_service import GoogleMapsService
+    maps_service = GoogleMapsService()
+    
+    @app.route('/api/maps/calculate-distance', methods=['POST'])
+    @login_required
+    def calculate_distance():
+        """Calculate distance and travel fee for a venue."""
+        try:
+            data = request.get_json()
+            destination = data.get('destination', '').strip()
+            
+            if not destination:
+                return jsonify({'success': False, 'error': 'Destination address required'}), 400
+            
+            # Basic address validation
+            if len(destination) < 5:
+                return jsonify({
+                    'success': False, 
+                    'error': 'Address too short. Please include street, suburb, and state.'
+                }), 400
+            
+            # Get departure time if provided
+            departure_time = None
+            if data.get('departure_time'):
+                departure_time = datetime.fromisoformat(data['departure_time'])
+            
+            result = maps_service.calculate_distance_and_time(destination, departure_time)
+            
+            if result:
+                return jsonify({
+                    'success': True,
+                    'data': result,
+                    'maps_url': maps_service.generate_maps_url(destination),
+                    'embed_url': maps_service.generate_embed_map_url(destination)
+                })
+            else:
+                # Provide more helpful error message
+                error_msg = 'Address not found. Please check the spelling and include more details like street, suburb, and state (VIC).'
+                return jsonify({'success': False, 'error': error_msg}), 400
+                
+        except Exception as e:
+            logger.error(f"Error calculating distance: {str(e)}")
+            return jsonify({'success': False, 'error': 'Unable to calculate distance. Please try again.'}), 500
+    
+    @app.route('/api/maps/update-couple-travel/<int:couple_id>', methods=['POST'])
+    @login_required
+    def update_couple_travel(couple_id):
+        """Update travel information for a specific couple."""
+        try:
+            # Check if couple belongs to current user
+            couple = Couple.query.get_or_404(couple_id)
+            if couple.celebrant_id != current_user.id:
+                return jsonify({'success': False, 'error': 'Access denied'}), 403
+            
+            result = maps_service.update_couple_travel_info(couple_id)
+            
+            if result['success']:
+                return jsonify(result)
+            else:
+                return jsonify(result), 400
+                
+        except Exception as e:
+            logger.error(f"Error updating couple travel info: {str(e)}")
+            return jsonify({'success': False, 'error': str(e)}), 500
+    
+    @app.route('/api/maps/batch-calculate', methods=['POST'])
+    @login_required
+    def batch_calculate_distances():
+        """Calculate distances for multiple couples."""
+        try:
+            # Get all couples for the current user with ceremony locations
+            couples = Couple.query.filter_by(celebrant_id=current_user.id)\
+                                 .filter(Couple.ceremony_location.isnot(None))\
+                                 .all()
+            
+            if not couples:
+                return jsonify({'success': True, 'message': 'No couples with ceremony locations found', 'results': {}})
+            
+            destinations = [couple.ceremony_location for couple in couples]
+            results = maps_service.batch_calculate_distances(destinations)
+            
+            # Update couples with calculated travel fees
+            updated_count = 0
+            for couple in couples:
+                if couple.ceremony_location in results:
+                    result = results[couple.ceremony_location]
+                    if 'travel_fee' in result:
+                        couple.travel_fee = result['travel_fee']
+                        updated_count += 1
+            
+            db.session.commit()
+            
+            return jsonify({
+                'success': True,
+                'results': results,
+                'updated_couples': updated_count,
+                'total_couples': len(couples)
+            })
+            
+        except Exception as e:
+            logger.error(f"Error in batch distance calculation: {str(e)}")
+            return jsonify({'success': False, 'error': str(e)}), 500
+    
+    @app.route('/api/maps/venue-info', methods=['POST'])
+    @login_required
+    def get_venue_info():
+        """Get comprehensive venue information including location and travel details."""
+        try:
+            data = request.get_json()
+            venue_name = data.get('venue_name')
+            address = data.get('address')
+            
+            if not venue_name:
+                return jsonify({'success': False, 'error': 'Venue name required'}), 400
+            
+            # Use the maps service to get venue info (this would need to be implemented)
+            # For now, we'll use the existing calculate_distance_and_time method
+            search_query = venue_name
+            if address:
+                search_query += f", {address}"
+            
+            result = maps_service.calculate_distance_and_time(search_query)
+            
+            if result:
+                return jsonify({
+                    'success': True,
+                    'venue_info': {
+                        'name': venue_name,
+                        'address': result['destination'],
+                        'distance_km': result['distance_km'],
+                        'travel_time': result['duration_text'],
+                        'travel_fee': result['travel_fee'],
+                        'maps_url': maps_service.generate_maps_url(search_query)
+                    }
+                })
+            else:
+                return jsonify({'success': False, 'error': 'Could not find venue information'}), 400
+                
+        except Exception as e:
+            logger.error(f"Error getting venue info: {str(e)}")
+            return jsonify({'success': False, 'error': str(e)}), 500
+    
+    @app.route('/api/maps/config', methods=['GET'])
+    @login_required
+    def maps_config():
+        """Check if Google Maps is configured."""
+        try:
+            return jsonify({
+                'success': True,
+                'configured': bool(maps_service.api_key),
+                'home_address': maps_service.home_address if maps_service.api_key else None
+            })
+        except Exception as e:
+            logger.error(f"Error checking Maps config: {str(e)}")
+            return jsonify({'success': False, 'error': str(e)}), 500
+    
+    @app.route('/maps-travel')
+    @login_required
+    def maps_travel():
+        """Maps and Travel management page."""
+        return render_template('maps_travel.html', 
+                             title='Maps & Travel Management',
+                             maps_api_key=maps_service.api_key)
+    
+    logger.info("Google Maps integration routes registered successfully")
+    
+except ImportError as e:
+    logger.warning(f"Could not register Google Maps routes: {e}")
 
 if __name__ == '__main__':
     with app.app_context():

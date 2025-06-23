@@ -16,31 +16,87 @@ from models import (
 class LegalFormsService:
     """Service class for managing legal forms and compliance."""
     
-    # Australian legal form requirements
+    # Australian legal form requirements for marriage celebrants
     FORM_TYPES = {
         'noim': {
-            'name': 'Notice of Intended Marriage',
-            'description': 'Required at least 1 month before ceremony',
+            'name': 'Notice of Intended Marriage (NOIM)',
+            'description': 'Required at least 1 month before ceremony. Must be completed and witnessed.',
             'deadline_days': 31,
-            'mandatory': True
+            'mandatory': True,
+            'requires_witness': True,
+            'template_available': True
         },
         'declaration': {
             'name': 'Declaration of No Impediment',
-            'description': 'Required for some circumstances',
+            'description': 'Required for some circumstances (e.g., if one partner is not Australian citizen)',
             'deadline_days': 7,
-            'mandatory': False
+            'mandatory': False,
+            'requires_witness': True,
+            'template_available': True
         },
         'divorce_certificate': {
             'name': 'Divorce Certificate',
-            'description': 'Required if previously married',
+            'description': 'Required if either partner was previously married and divorced',
             'deadline_days': 14,
-            'mandatory': False
+            'mandatory': False,
+            'requires_witness': False,
+            'template_available': False
         },
         'death_certificate': {
             'name': 'Death Certificate',
-            'description': 'Required if widowed',
+            'description': 'Required if either partner was previously married and widowed',
             'deadline_days': 14,
-            'mandatory': False
+            'mandatory': False,
+            'requires_witness': False,
+            'template_available': False
+        },
+        'birth_certificate_partner1': {
+            'name': 'Birth Certificate - Partner 1',
+            'description': 'Required for identification purposes',
+            'deadline_days': 7,
+            'mandatory': True,
+            'requires_witness': False,
+            'template_available': False
+        },
+        'birth_certificate_partner2': {
+            'name': 'Birth Certificate - Partner 2', 
+            'description': 'Required for identification purposes',
+            'deadline_days': 7,
+            'mandatory': True,
+            'requires_witness': False,
+            'template_available': False
+        },
+        'witness_details': {
+            'name': 'Witness Details',
+            'description': 'Details of two witnesses who will be present at the ceremony',
+            'deadline_days': 1,
+            'mandatory': True,
+            'requires_witness': False,
+            'template_available': True
+        },
+        'ceremony_details': {
+            'name': 'Ceremony Details Confirmation',
+            'description': 'Final confirmation of ceremony date, time, and location',
+            'deadline_days': 7,
+            'mandatory': True,
+            'requires_witness': False,
+            'template_available': True
+        },
+        'passport_partner1': {
+            'name': 'Passport - Partner 1',
+            'description': 'Alternative to birth certificate for identification',
+            'deadline_days': 7,
+            'mandatory': False,
+            'requires_witness': False,
+            'template_available': False
+        },
+        'passport_partner2': {
+            'name': 'Passport - Partner 2',
+            'description': 'Alternative to birth certificate for identification', 
+            'deadline_days': 7,
+            'mandatory': False,
+            'requires_witness': False,
+            'template_available': False
         }
     }
     
@@ -60,23 +116,32 @@ class LegalFormsService:
             
             forms_created = []
             
-            # Always create NOIM form
-            noim_form = cls._create_form_submission(
-                couple=couple,
-                form_type='noim'
-            )
-            if noim_form:
-                forms_created.append(noim_form)
+            # Create all mandatory forms
+            mandatory_forms = ['noim', 'birth_certificate_partner1', 'birth_certificate_partner2', 
+                             'witness_details', 'ceremony_details']
             
-            # Create other forms based on couple's circumstances
-            # This could be enhanced with a questionnaire system
+            for form_type in mandatory_forms:
+                form = cls._create_form_submission(couple=couple, form_type=form_type)
+                if form:
+                    forms_created.append(form)
+            
+            # Create optional forms that might be needed
+            optional_forms = ['declaration', 'passport_partner1', 'passport_partner2']
+            
+            for form_type in optional_forms:
+                form = cls._create_form_submission(couple=couple, form_type=form_type)
+                if form:
+                    forms_created.append(form)
+            
+            # Note: Divorce and death certificates are created on-demand when needed
             
             db.session.commit()
             
             return {
                 'success': True,
                 'forms_created': len(forms_created),
-                'forms': [f.form_type for f in forms_created]
+                'forms': [f.form_type for f in forms_created],
+                'message': f'Created {len(forms_created)} legal forms for {couple.full_names}'
             }
             
         except Exception as e:
@@ -302,11 +367,14 @@ class LegalFormsService:
                     'name': form_info.get('name', form.form_type.title()),
                     'description': form_info.get('description', ''),
                     'status': form.status,
+                    'legal_deadline': form.legal_deadline,
                     'deadline': form.legal_deadline.isoformat() if form.legal_deadline else None,
                     'days_until_deadline': form.days_until_deadline,
                     'urgency_level': form.urgency_level,
                     'is_overdue': form.is_overdue,
-                    'submitted_at': form.submitted_at.isoformat() if form.submitted_at else None,
+                    'is_mandatory': form_info.get('mandatory', False),
+                    'template_available': form_info.get('template_available', False),
+                    'submitted_at': form.submitted_at,
                     'submitted_by': form.submitted_by,
                     'is_validated': form.is_validated,
                     'validation_notes': form.validation_notes
@@ -325,6 +393,41 @@ class LegalFormsService:
             
         except Exception as e:
             return {'success': False, 'error': str(e)}
+    
+    @classmethod
+    def get_urgent_alerts_count(cls, organization_id: int) -> int:
+        """Get count of urgent alerts for an organization."""
+        try:
+            # Handle case where organization_id is None (legacy users)
+            if not organization_id:
+                # For legacy users without organization, check if we have a default organization
+                from models import Organization
+                default_org = Organization.query.first()
+                if default_org:
+                    organization_id = default_org.id
+                else:
+                    return 0
+            
+            # Count urgent alerts (high severity, unresolved)
+            urgent_count = ComplianceAlert.query.filter_by(
+                organization_id=organization_id,
+                severity='high',
+                is_resolved=False
+            ).count()
+            
+            # Also count overdue forms as urgent
+            overdue_forms = LegalFormSubmission.query.filter_by(
+                organization_id=organization_id
+            ).filter(
+                LegalFormSubmission.legal_deadline < date.today(),
+                LegalFormSubmission.status != 'completed'
+            ).count()
+            
+            return urgent_count + overdue_forms
+            
+        except Exception as e:
+            current_app.logger.warning(f"Error getting urgent alerts count: {e}")
+            return 0
     
     @classmethod
     def _validate_uploaded_file(cls, file_data: Dict) -> Dict:
