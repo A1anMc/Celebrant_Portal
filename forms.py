@@ -1,7 +1,7 @@
 from flask_wtf import FlaskForm
 from wtforms import StringField, EmailField, TelField, DateField, TextAreaField, SelectField, BooleanField, PasswordField, DateTimeField
 from wtforms.validators import DataRequired, Email, Optional, Length
-from flask_wtf.file import FileField, FileAllowed
+from flask_wtf.file import FileField, FileAllowed, FileRequired
 
 class LoginForm(FlaskForm):
     email = StringField('Email', validators=[DataRequired(), Email()])
@@ -44,4 +44,44 @@ class CeremonyTemplateForm(FlaskForm):
                             validators=[
                                 Optional(),
                                 FileAllowed(['txt', 'docx', 'doc'], 'Please upload a document file (TXT, DOC, DOCX)')
-                            ]) 
+                            ])
+
+
+class LegalFormUploadForm(FlaskForm):
+    """Form for couples to upload legal documents."""
+    file = FileField('Legal Form Document', 
+                    validators=[
+                        FileRequired('Please select a file to upload'),
+                        FileAllowed(['pdf', 'jpg', 'jpeg', 'png', 'doc', 'docx'], 
+                                  'Please upload a PDF, image (JPG/PNG), or document file')
+                    ])
+    submitted_by = StringField('Submitted By', 
+                             validators=[DataRequired(), Length(max=100)],
+                             render_kw={'placeholder': 'Enter your full name'})
+
+
+class FormValidationForm(FlaskForm):
+    """Form for celebrants to validate submitted legal forms."""
+    is_valid = BooleanField('Form is valid and complete')
+    validation_notes = TextAreaField('Validation Notes', 
+                                   validators=[Optional(), Length(max=1000)],
+                                   render_kw={'placeholder': 'Enter any notes about the form validation...'})
+
+
+class LegalFormRequirementForm(FlaskForm):
+    """Form for setting up legal form requirements for a couple."""
+    form_type = SelectField('Form Type',
+                          choices=[
+                              ('noim', 'Notice of Intended Marriage (NOIM)'),
+                              ('declaration', 'Declaration of No Impediment'),
+                              ('divorce_certificate', 'Divorce Certificate'),
+                              ('death_certificate', 'Death Certificate')
+                          ],
+                          validators=[DataRequired()])
+    is_required = BooleanField('This form is required for this couple')
+    custom_deadline = DateField('Custom Deadline (optional)', 
+                              validators=[Optional()],
+                              render_kw={'type': 'date'})
+    notes = TextAreaField('Special Instructions', 
+                         validators=[Optional(), Length(max=500)],
+                         render_kw={'placeholder': 'Any special instructions for this form...'}) 

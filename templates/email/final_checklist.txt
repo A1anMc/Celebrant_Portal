@@ -1,0 +1,84 @@
+Subject: Final Checklist - {{ ceremony_date }} is Almost Here! 🎊
+
+Dear {{ partner1_name }} and {{ partner2_name }},
+
+Can you believe it? Your wedding day is just around the corner! I'm so excited to be part of your special moment.
+
+Here's everything we need to confirm before the big day:
+
+📋 FINAL CEREMONY DETAILS:
+
+✅ Date: {{ ceremony_date }}
+✅ Time: {{ ceremony_time }}
+✅ Location: {{ ceremony_location }}
+✅ Guest Count: Approximately {{ guest_count }}
+
+📝 PRE-CEREMONY CHECKLIST:
+
+🎯 LEGAL DOCUMENTS (MUST HAVE):
+[ ] Notice of Intended Marriage (NOIM) - signed and returned
+[ ] Birth certificates (copies for my records)
+[ ] Divorce papers (if applicable)
+[ ] Photo ID for both partners
+
+💍 CEREMONY SPECIFICS:
+[ ] Ring bearer confirmed (if applicable)
+[ ] Musicians/DJ contacted about ceremony cues
+[ ] Readers briefed on their parts
+[ ] Special family acknowledgments confirmed
+[ ] Any cultural elements prepared
+
+🎵 MUSIC & TIMING:
+[ ] Processional music selected: {{ processional_music }}
+[ ] Recessional music selected: {{ recessional_music }}
+[ ] Sound system tested at venue (if required)
+[ ] Music cues communicated to DJ/musicians
+
+👨‍👩‍👧‍👦 WHO'S WHO:
+[ ] Bridal party order confirmed
+[ ] Family seating arrangements sorted
+[ ] Photography/videography coordinator contacted
+[ ] Wedding party knows the processional plan
+
+⏰ DAY-OF TIMELINE:
+
+{{ timeline_details }}
+
+📞 EMERGENCY CONTACTS:
+Please ensure I have mobile numbers for:
+- Bride: {{ partner1_phone }}
+- Groom: {{ partner2_phone }}
+- Wedding coordinator: [COORDINATOR_PHONE]
+- Key family member: [FAMILY_CONTACT]
+
+🌦️ WEATHER CONTINGENCY (if outdoor):
+[ ] Backup plan discussed and confirmed
+[ ] All parties notified of contingency arrangements
+
+💌 FINAL REMINDERS:
+
+• I'll arrive 30 minutes before the ceremony starts
+• Your ceremony script is finalized and printed
+• Bring tissues - happy tears are guaranteed! 😊
+• Remember to breathe and enjoy every moment
+• This is YOUR day - don't stress about small hiccups
+
+📱 DAY-OF CONTACT:
+My mobile will be on all day: {{ celebrant_phone }}
+If anything changes or you need me, don't hesitate to call or text!
+
+🎉 MOST IMPORTANTLY:
+
+Take a moment tomorrow/today to pause and appreciate this milestone. You're about to marry your best friend! All the planning has led to this beautiful moment.
+
+I can't wait to see you both radiant and happy, saying "I do" to your forever.
+
+With excitement and warm wishes,
+
+{{ celebrant_name }}
+Marriage Celebrant
+
+{{ celebrant_email }}
+{{ celebrant_phone }}
+
+P.S. Get a good night's sleep, eat breakfast, and remember - by this time tomorrow, you'll be married! 💕✨ 

@@ -184,18 +184,26 @@
             </div>
             <div class="card-body">
                 <div class="list-group list-group-flush">
-                    <a href="#" class="list-group-item list-group-item-action">
-                        <i class="bi bi-calendar-plus"></i> Schedule Meeting
+                    <a href="{{ url_for('couple_edit', id=couple.id) }}" class="list-group-item list-group-item-action">
+                        <i class="bi bi-pencil"></i> Edit Couple Details
                     </a>
-                    <a href="#" class="list-group-item list-group-item-action">
-                        <i class="bi bi-file-earmark-plus"></i> Add Document
-                    </a>
-                    <a href="#" class="list-group-item list-group-item-action">
-                        <i class="bi bi-pencil-square"></i> Plan Ceremony
-                    </a>
-                    <a href="#" class="list-group-item list-group-item-action">
+                    <a href="mailto:{{ couple.partner1_email }}?cc={{ couple.partner2_email }}&subject=Re: Your Wedding Ceremony - {{ couple.partner1_name }} %26 {{ couple.partner2_name }}" class="list-group-item list-group-item-action">
                         <i class="bi bi-envelope"></i> Send Email
                     </a>
+                    <button type="button" class="list-group-item list-group-item-action" onclick="copyContactInfo()">
+                        <i class="bi bi-clipboard"></i> Copy Contact Info
+                    </button>
+                    <a href="/templates" class="list-group-item list-group-item-action">
+                        <i class="bi bi-file-text"></i> View Templates
+                    </a>
+                    <button type="button" class="list-group-item list-group-item-action text-success" onclick="updateStatus('Confirmed')">
+                        <i class="bi bi-check-circle"></i> Mark as Confirmed
+                    </button>
+                    {% if couple.status != 'Completed' %}
+                    <button type="button" class="list-group-item list-group-item-action text-info" onclick="updateStatus('Completed')">
+                        <i class="bi bi-flag"></i> Mark as Completed
+                    </button>
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -264,6 +272,80 @@
 <script>
 function confirmDelete() {
     new bootstrap.Modal(document.getElementById('deleteModal')).show();
+}
+
+function copyContactInfo() {
+    const contactInfo = `{{ couple.partner1_name }} & {{ couple.partner2_name }}
+Partner 1: {{ couple.partner1_name }}
+Email: {{ couple.partner1_email }}
+Phone: {{ couple.partner1_phone or 'Not provided' }}
+
+Partner 2: {{ couple.partner2_name }}
+Email: {{ couple.partner2_email }}
+Phone: {{ couple.partner2_phone or 'Not provided' }}
+
+Ceremony Date: {{ couple.ceremony_date.strftime('%d %B %Y') if couple.ceremony_date else 'Not set' }}
+Location: {{ couple.ceremony_location or 'Not set' }}
+Status: {{ couple.status }}`;
+    
+    navigator.clipboard.writeText(contactInfo).then(function() {
+        // Show success message
+        const button = event.target.closest('button');
+        const originalText = button.innerHTML;
+        button.innerHTML = '<i class="bi bi-check"></i> Copied!';
+        button.classList.add('text-success');
+        
+        setTimeout(() => {
+            button.innerHTML = originalText;
+            button.classList.remove('text-success');
+        }, 2000);
+    }).catch(function(err) {
+        alert('Failed to copy contact info: ' + err);
+    });
+}
+
+function updateStatus(newStatus) {
+    if (confirm(`Are you sure you want to mark this couple as ${newStatus}?`)) {
+        // Create a form and submit it
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '{{ url_for("couple_edit", id=couple.id) }}';
+        
+        // Add CSRF token
+        const csrfToken = document.querySelector('meta[name=csrf-token]');
+        if (csrfToken) {
+            const csrfInput = document.createElement('input');
+            csrfInput.type = 'hidden';
+            csrfInput.name = 'csrf_token';
+            csrfInput.value = csrfToken.getAttribute('content');
+            form.appendChild(csrfInput);
+        }
+        
+        // Add status field
+        const statusInput = document.createElement('input');
+        statusInput.type = 'hidden';
+        statusInput.name = 'status';
+        statusInput.value = newStatus;
+        form.appendChild(statusInput);
+        
+        // Add other required fields with current values
+        const fields = [
+            'partner1_name', 'partner1_email', 'partner1_phone',
+            'partner2_name', 'partner2_email', 'partner2_phone',
+            'ceremony_date', 'ceremony_location', 'notes'
+        ];
+        
+        fields.forEach(field => {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = field;
+            input.value = '{{ couple[field] or "" }}';
+            form.appendChild(input);
+        });
+        
+        document.body.appendChild(form);
+        form.submit();
+    }
 }
 </script>
 {% endblock %} 

@@ -1,0 +1,195 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">📄 Upload Legal Form</h4>
+                </div>
+                <div class="card-body">
+                    <!-- Form Information -->
+                    <div class="alert alert-info">
+                        <h5>📋 {{ form_submission.form_type.upper() }} Form Required</h5>
+                        <p class="mb-2">
+                            <strong>Couple:</strong> {{ form_submission.couple.full_names }}<br>
+                            <strong>Ceremony Date:</strong> {{ form_submission.couple.ceremony_date.strftime('%B %d, %Y') if form_submission.couple.ceremony_date else 'Not set' }}<br>
+                            <strong>Legal Deadline:</strong> 
+                            <span class="badge bg-{{ 'danger' if form_submission.is_overdue else 'warning' if form_submission.days_until_deadline <= 7 else 'success' }}">
+                                {{ form_submission.legal_deadline.strftime('%B %d, %Y') }}
+                                {% if form_submission.days_until_deadline %}
+                                    ({{ form_submission.days_until_deadline }} days remaining)
+                                {% endif %}
+                            </span>
+                        </p>
+                        
+                        {% if form_submission.is_overdue %}
+                        <div class="alert alert-danger mb-0">
+                            <strong>⚠️ OVERDUE:</strong> This form is {{ form_submission.days_until_deadline|abs }} days overdue. Please submit immediately.
+                        </div>
+                        {% elif form_submission.days_until_deadline <= 7 %}
+                        <div class="alert alert-warning mb-0">
+                            <strong>🚨 URGENT:</strong> This form is due very soon!
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Legal Requirements -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h6 class="mb-0">📝 Legal Requirements</h6>
+                        </div>
+                        <div class="card-body">
+                            {% if form_submission.form_type == 'noim' %}
+                            <h6>Notice of Intended Marriage (NOIM)</h6>
+                            <ul>
+                                <li>Must be completed at least 1 month before your ceremony</li>
+                                <li>Both partners must sign the form</li>
+                                <li>Requires witness signatures</li>
+                                <li>Must include certified copies of birth certificates</li>
+                                <li>If divorced, include divorce certificate</li>
+                                <li>If widowed, include death certificate of former spouse</li>
+                            </ul>
+                            {% elif form_submission.form_type == 'declaration' %}
+                            <h6>Declaration of No Impediment</h6>
+                            <ul>
+                                <li>Required if you were born overseas</li>
+                                <li>Must be from your country of birth</li>
+                                <li>Must be less than 6 months old</li>
+                                <li>Must be officially translated if not in English</li>
+                            </ul>
+                            {% else %}
+                            <h6>{{ form_submission.form_type.replace('_', ' ').title() }}</h6>
+                            <p>Please ensure all required information is complete and legible.</p>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Upload Form -->
+                    <form method="POST" enctype="multipart/form-data">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="mb-3">
+                            {{ form.submitted_by.label(class="form-label") }}
+                            {{ form.submitted_by(class="form-control") }}
+                            {% if form.submitted_by.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.submitted_by.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.file.label(class="form-label") }}
+                            {{ form.file(class="form-control", accept=".pdf,.jpg,.jpeg,.png,.doc,.docx") }}
+                            {% if form.file.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.file.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">
+                                Accepted formats: PDF, JPG, PNG, DOC, DOCX (Max 10MB)
+                            </div>
+                        </div>
+
+                        <!-- File Upload Guidelines -->
+                        <div class="alert alert-light">
+                            <h6>📸 File Upload Guidelines:</h6>
+                            <ul class="mb-0">
+                                <li><strong>Quality:</strong> Ensure all text is clearly readable</li>
+                                <li><strong>Completeness:</strong> Include all pages of the document</li>
+                                <li><strong>Signatures:</strong> All required signatures must be visible</li>
+                                <li><strong>Format:</strong> PDF is preferred for documents</li>
+                            </ul>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                📤 Submit Form
+                            </button>
+                            <a href="#" class="btn btn-outline-secondary" onclick="history.back()">
+                                ← Back
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Help Section -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h6 class="mb-0">❓ Need Help?</h6>
+                </div>
+                <div class="card-body">
+                    <p>If you have questions about this form or need assistance:</p>
+                    <ul>
+                        <li>📞 Call your celebrant directly</li>
+                        <li>📧 Send an email with your questions</li>
+                        <li>📋 Review the legal requirements above</li>
+                    </ul>
+                    <div class="alert alert-warning">
+                        <strong>Important:</strong> Submitting incomplete or incorrect forms may delay your ceremony. 
+                        Please ensure all information is accurate before submitting.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// File upload preview
+document.querySelector('input[type="file"]').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (file) {
+        const fileSize = (file.size / 1024 / 1024).toFixed(2);
+        const fileName = file.name;
+        
+        // Show file info
+        const fileInfo = document.createElement('div');
+        fileInfo.className = 'alert alert-info mt-2';
+        fileInfo.innerHTML = `
+            <strong>Selected file:</strong> ${fileName}<br>
+            <strong>Size:</strong> ${fileSize} MB
+        `;
+        
+        // Remove existing file info
+        const existingInfo = document.querySelector('.file-info');
+        if (existingInfo) {
+            existingInfo.remove();
+        }
+        
+        fileInfo.className += ' file-info';
+        e.target.parentNode.appendChild(fileInfo);
+    }
+});
+
+// Form validation
+document.querySelector('form').addEventListener('submit', function(e) {
+    const fileInput = document.querySelector('input[type="file"]');
+    const submittedBy = document.querySelector('input[name="submitted_by"]');
+    
+    if (!fileInput.files.length) {
+        e.preventDefault();
+        alert('Please select a file to upload.');
+        return false;
+    }
+    
+    if (!submittedBy.value.trim()) {
+        e.preventDefault();
+        alert('Please enter your name.');
+        return false;
+    }
+    
+    // Show loading state
+    const submitBtn = document.querySelector('button[type="submit"]');
+    submitBtn.innerHTML = '⏳ Uploading...';
+    submitBtn.disabled = true;
+});
+</script>
+{% endblock %} 

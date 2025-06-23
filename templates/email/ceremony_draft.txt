@@ -1,0 +1,58 @@
+Subject: Your Ceremony Draft is Ready! 📄✨
+
+Dear {{ partner1_name }} and {{ partner2_name }},
+
+I'm excited to share the draft of your wedding ceremony! I've crafted this based on our conversations and your preferences, and I think you're going to love it.
+
+📄 ATTACHED: Your Ceremony Draft
+
+Please find attached:
+- Complete ceremony script (PDF)
+- Timeline breakdown
+- Notes for your review
+
+🔍 WHAT TO LOOK FOR:
+
+✅ Overall flow and timing
+✅ Personal touches and stories we discussed
+✅ Vow placement and timing
+✅ Music cues and special moments
+✅ Family involvement sections
+✅ Pronunciation of names (especially important!)
+
+📝 FEEDBACK PROCESS:
+
+I want this ceremony to be absolutely perfect for you! Please:
+
+1. Read through everything together
+2. Mark any changes, additions, or concerns
+3. Submit feedback via: [FEEDBACK_LINK] or reply to this email
+4. Don't worry about "small" changes - every detail matters!
+
+🎯 COMMON THINGS TO CONSIDER:
+
+• Are there any family members or friends you'd like to acknowledge?
+• Would you like any cultural traditions included?
+• Any additional readings or music moments?
+• Are you comfortable with the level of humor/sentiment?
+• Do the processional/recessional plans work for your venue?
+
+⏰ TIMING:
+Please send feedback within 7 days so we have time for revisions. I typically do 2-3 rounds of edits to get everything just right.
+
+🎪 REHEARSAL REMINDER:
+We're planning to meet at {{ ceremony_location }} on {{ rehearsal_date }} at {{ rehearsal_time }} for our rehearsal. This helps everyone feel confident and relaxed for the big day!
+
+💕 A PERSONAL NOTE:
+Every ceremony I write is unique, and yours is no exception. I've included elements that reflect your journey together and the love you share. I hope reading it gives you butterflies thinking about your big day!
+
+Can't wait to hear your thoughts!
+
+Warmest regards,
+
+{{ celebrant_name }}
+{{ celebrant_phone }}
+{{ celebrant_email }}
+
+---
+"Love doesn't just sit there, like a stone; it has to be made, like bread, remade all the time, made new." - Ursula K. Le Guin 

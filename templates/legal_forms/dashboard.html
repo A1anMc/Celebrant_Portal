@@ -1,0 +1,264 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2>📋 Legal Forms Compliance Dashboard</h2>
+                <div class="btn-group">
+                    <a href="{{ url_for('legal_forms.compliance_report') }}" class="btn btn-outline-primary">
+                        📊 Generate Report
+                    </a>
+                    <button class="btn btn-outline-secondary" onclick="refreshDashboard()">
+                        🔄 Refresh
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Total Forms</h5>
+                    <h2 class="mb-0">{{ data.statistics.total_forms }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Completed</h5>
+                    <h2 class="mb-0">{{ data.statistics.completed_forms }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-danger text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Overdue</h5>
+                    <h2 class="mb-0">{{ data.statistics.overdue_forms }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Upcoming Deadlines</h5>
+                    <h2 class="mb-0">{{ data.statistics.upcoming_forms }}</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Compliance Rate -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Overall Compliance Rate</h5>
+                    <div class="progress mb-2" style="height: 30px;">
+                        <div class="progress-bar 
+                            {% if data.statistics.compliance_rate >= 90 %}bg-success
+                            {% elif data.statistics.compliance_rate >= 70 %}bg-warning
+                            {% else %}bg-danger{% endif %}" 
+                            role="progressbar" 
+                            style="width: {{ data.statistics.compliance_rate }}%">
+                            {{ "%.1f"|format(data.statistics.compliance_rate) }}%
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Active Alerts -->
+    {% if data.alerts %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">🚨 Active Alerts ({{ data.alerts|length }})</h5>
+                </div>
+                <div class="card-body">
+                    {% for alert in data.alerts[:5] %}
+                    <div class="alert alert-{{ 'danger' if alert.severity == 'critical' else 'warning' if alert.severity == 'high' else 'info' }} alert-dismissible fade show">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <strong>{{ alert.title }}</strong><br>
+                                <small>{{ alert.message }}</small><br>
+                                <small class="text-muted">{{ alert.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
+                            </div>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" 
+                                    onclick="resolveAlert({{ alert.id }})">
+                                ✓ Resolve
+                            </button>
+                        </div>
+                    </div>
+                    {% endfor %}
+                    
+                    {% if data.alerts|length > 5 %}
+                    <p class="text-muted">... and {{ data.alerts|length - 5 }} more alerts</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Couples Overview -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">👫 Couples & Form Status</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Couple</th>
+                                    <th>Ceremony Date</th>
+                                    <th>Compliance Score</th>
+                                    <th>Overdue Forms</th>
+                                    <th>Upcoming Deadlines</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for couple_data in data.couples %}
+                                <tr class="{% if couple_data.overdue_count > 0 %}table-danger
+                                         {% elif couple_data.upcoming_count > 0 %}table-warning
+                                         {% endif %}">
+                                    <td>
+                                        <strong>{{ couple_data.couple.full_names }}</strong>
+                                        {% if couple_data.overdue_count > 0 %}
+                                        <span class="badge bg-danger ms-2">OVERDUE</span>
+                                        {% elif couple_data.upcoming_count > 0 %}
+                                        <span class="badge bg-warning ms-2">URGENT</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if couple_data.couple.ceremony_date %}
+                                        {{ couple_data.couple.ceremony_date.strftime('%Y-%m-%d') }}
+                                        {% else %}
+                                        <span class="text-muted">Not set</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="progress" style="height: 20px;">
+                                            <div class="progress-bar 
+                                                {% if couple_data.compliance_score >= 90 %}bg-success
+                                                {% elif couple_data.compliance_score >= 70 %}bg-warning
+                                                {% else %}bg-danger{% endif %}" 
+                                                style="width: {{ couple_data.compliance_score }}%">
+                                                {{ couple_data.compliance_score }}%
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        {% if couple_data.overdue_count > 0 %}
+                                        <span class="badge bg-danger">{{ couple_data.overdue_count }}</span>
+                                        {% else %}
+                                        <span class="text-success">✓</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if couple_data.upcoming_count > 0 %}
+                                        <span class="badge bg-warning">{{ couple_data.upcoming_count }}</span>
+                                        {% else %}
+                                        <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{{ url_for('legal_forms.couple_forms_status', couple_id=couple_data.couple.id) }}" 
+                                               class="btn btn-outline-primary">
+                                                📋 View Forms
+                                            </a>
+                                            <button class="btn btn-outline-secondary" 
+                                                    onclick="initializeForms({{ couple_data.couple.id }})">
+                                                ⚡ Initialize
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function refreshDashboard() {
+    location.reload();
+}
+
+function resolveAlert(alertId) {
+    if (confirm('Mark this alert as resolved?')) {
+        fetch(`/legal-forms/resolve-alert/${alertId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('meta[name=csrf-token]').getAttribute('content')
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error resolving alert: ' + data.error);
+            }
+        })
+        .catch(error => {
+            alert('Error: ' + error);
+        });
+    }
+}
+
+function initializeForms(coupleId) {
+    if (confirm('Initialize legal forms for this couple?')) {
+        fetch(`/legal-forms/initialize/${coupleId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('meta[name=csrf-token]').getAttribute('content')
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(`Initialized ${data.forms_created} forms successfully`);
+                location.reload();
+            } else {
+                alert('Error initializing forms: ' + data.error);
+            }
+        })
+        .catch(error => {
+            alert('Error: ' + error);
+        });
+    }
+}
+
+// Auto-refresh dashboard every 5 minutes
+setInterval(function() {
+    fetch('/legal-forms/api/dashboard-stats')
+        .then(response => response.json())
+        .then(data => {
+            // Update statistics without full page reload
+            console.log('Dashboard stats updated', data);
+        })
+        .catch(error => console.log('Auto-refresh error:', error));
+}, 300000); // 5 minutes
+</script>
+{% endblock %} 

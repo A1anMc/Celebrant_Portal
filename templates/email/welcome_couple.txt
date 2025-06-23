@@ -1,0 +1,46 @@
+Subject: Welcome! Let's Plan Your Perfect Wedding Ceremony 💕
+
+Dear {{ partner1_name }} and {{ partner2_name }},
+
+Congratulations on your engagement! I'm absolutely delighted that you've chosen me to be your marriage celebrant for your special day on {{ ceremony_date }}.
+
+🎉 WHAT TO EXPECT NEXT:
+
+✅ Initial Meeting: We'll schedule a chat (in person, phone, or video) to get to know each other and discuss your vision
+✅ Ceremony Planning: Together we'll create a ceremony that truly reflects your love story
+✅ Legal Requirements: I'll guide you through all the paperwork (Notice of Intended Marriage, etc.)
+✅ Rehearsal: Optional but recommended - we can run through everything the day before
+✅ Your Big Day: I'll arrive early, keep things relaxed, and marry you with joy!
+
+📋 PLANNING PORTAL ACCESS:
+I've set up a planning portal where you can:
+- View your ceremony details
+- Upload documents
+- Access planning resources
+- Communicate directly with me
+
+Portal Link: [PORTAL_LINK]
+Your Login: {{ partner1_email }}
+
+📅 NEXT STEPS:
+1. Reply to this email with 2-3 dates/times that work for our initial meeting
+2. Start thinking about what style of ceremony you'd like (traditional, modern, outdoor, etc.)
+3. Check out my ceremony samples in the portal for inspiration
+
+💡 HELPFUL RESOURCES:
+- Ceremony Style Guide: [LINK]
+- Vow Writing Tips: [LINK]
+- Music Suggestions: [LINK]
+- Timeline Template: [LINK]
+
+I'm here to make this process as smooth and enjoyable as possible. Please don't hesitate to reach out with any questions - no question is too small!
+
+Looking forward to being part of your love story.
+
+Warmest congratulations,
+
+{{ celebrant_name }}
+{{ celebrant_phone }}
+{{ celebrant_email }}
+
+P.S. Start thinking about your vows early - they don't need to be Shakespeare, just speak from the heart! 💕 

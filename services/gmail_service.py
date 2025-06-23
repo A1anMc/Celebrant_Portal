@@ -24,7 +24,10 @@ from fuzzywuzzy import process
 logger = logging.getLogger(__name__)
 
 # If modifying these scopes, delete the file token.pickle.
-SCOPES = ['https://www.googleapis.com/auth/gmail.modify']
+SCOPES = [
+    'https://www.googleapis.com/auth/gmail.modify',
+    'https://www.googleapis.com/auth/drive.readonly'  # Added for Drive template import
+]
 
 class GmailService:
     def __init__(self):

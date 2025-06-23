@@ -33,6 +33,10 @@ app = Flask(__name__)
 env = os.environ.get('FLASK_ENV', 'default')
 app.config.from_object(config[env])
 
+# Initialize Celery
+from celery_app import make_celery
+celery = make_celery(app)
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
@@ -476,6 +480,152 @@ def template_delete(id: int):
     logger.info(f"Template deleted: {template_name}")
     flash('Template deleted successfully!', 'success')
     return redirect(url_for('templates_list'))
+
+# Google Drive Template Import Routes
+@app.route('/templates/import')
+@login_required
+def templates_import():
+    """Show the Drive template import page."""
+    try:
+        from services.drive_service import DriveService
+        drive_service = DriveService()
+        drive_connected = drive_service.check_drive_access()
+    except Exception:
+        drive_connected = False
+    
+    return render_template('templates/import.html', 
+                         drive_connected=drive_connected,
+                         files=None, 
+                         searched=False)
+
+@app.route('/templates/authorize-drive')
+@login_required
+def authorize_drive():
+    """Start the Drive authorization process."""
+    try:
+        from services.drive_service import DriveService
+        drive_service = DriveService()
+        
+        # Force re-authentication to get Drive scope
+        if os.path.exists('token.pickle'):
+            os.remove('token.pickle')
+        
+        # This will trigger the OAuth flow
+        drive_service.ensure_authenticated()
+        
+        flash('Google Drive access authorized successfully!', 'success')
+        return redirect(url_for('templates_import'))
+        
+    except Exception as e:
+        logger.error(f"Drive authorization error: {e}")
+        flash(f'Failed to authorize Drive access: {str(e)}', 'error')
+        return redirect(url_for('templates_import'))
+
+@app.route('/templates/search-drive-templates')
+@login_required
+def search_drive_templates():
+    """Search for templates in Google Drive."""
+    try:
+        from services.drive_service import DriveService
+        drive_service = DriveService()
+        
+        folder_name = request.args.get('folder')
+        files = drive_service.search_template_files(folder_name=folder_name)
+        
+        return jsonify({
+            'success': True,
+            'files': files
+        })
+        
+    except Exception as e:
+        logger.error(f"Drive search error: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        })
+
+@app.route('/templates/preview-drive-file')
+@login_required
+def preview_drive_file():
+    """Preview a Drive file."""
+    try:
+        from services.drive_service import DriveService
+        drive_service = DriveService()
+        
+        file_id = request.args.get('file_id')
+        if not file_id:
+            return jsonify({
+                'success': False,
+                'error': 'File ID is required'
+            })
+        
+        preview_data = drive_service.preview_file(file_id)
+        
+        return jsonify({
+            'success': True,
+            'metadata': preview_data['metadata'],
+            'preview': preview_data['preview']
+        })
+        
+    except Exception as e:
+        logger.error(f"Drive preview error: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        })
+
+@app.route('/templates/import-from-drive', methods=['POST'])
+@login_required
+@handle_db_errors
+def import_from_drive():
+    """Import a template from Google Drive."""
+    try:
+        from services.drive_service import DriveService
+        drive_service = DriveService()
+        
+        file_id = request.form.get('file_id')
+        name = request.form.get('name')
+        template_type = request.form.get('type')
+        description = request.form.get('description', '')
+        is_default = request.form.get('is_default') == 'on'
+        
+        if not file_id or not name or not template_type:
+            flash('Missing required fields', 'error')
+            return redirect(url_for('templates_import'))
+        
+        # Get the file content
+        file_data = drive_service.get_file_content(file_id)
+        
+        # Create the template
+        template = CeremonyTemplate(
+            name=name,
+            description=description,
+            content=file_data['processed_content'],
+            ceremony_type=template_type,
+            is_default=is_default,
+            celebrant_id=current_user.id
+        )
+        
+        # If this is set as default, unset other defaults of the same type
+        if template.is_default:
+            CeremonyTemplate.query.filter_by(
+                celebrant_id=current_user.id,
+                ceremony_type=template.ceremony_type,
+                is_default=True
+            ).update({'is_default': False})
+        
+        db.session.add(template)
+        db.session.commit()
+        
+        logger.info(f"Template imported from Drive: {template.name}")
+        flash(f'Template "{name}" imported successfully from Google Drive!', 'success')
+        
+        return redirect(url_for('template_view', id=template.id))
+        
+    except Exception as e:
+        logger.error(f"Drive import error: {e}")
+        flash(f'Failed to import template: {str(e)}', 'error')
+        return redirect(url_for('templates_import'))
 
 @app.route('/scan_emails', methods=['GET', 'POST'])
 @login_required
@@ -1025,6 +1175,14 @@ def forbidden_error(error):
     if request.path.startswith('/api/'):
         return jsonify({'error': 'Forbidden'}), 403
     return render_template('errors/403.html'), 403
+
+# Register legal forms blueprint
+try:
+    from legal_forms_routes import legal_forms_bp
+    app.register_blueprint(legal_forms_bp, url_prefix='/legal-forms')
+    logger.info("Legal forms blueprint registered successfully")
+except ImportError as e:
+    logger.warning(f"Could not register legal forms blueprint: {e}")
 
 if __name__ == '__main__':
     with app.app_context():

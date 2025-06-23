@@ -1,0 +1,71 @@
+Subject: Congratulations Mr. & Mrs. {{ couple_surname }}! 💕
+
+Dear {{ partner1_name }} and {{ partner2_name }},
+
+I hope you're both floating on cloud nine! It was such an absolute joy and privilege to officiate your wedding ceremony on {{ ceremony_date }}. 
+
+🎉 WHAT A BEAUTIFUL DAY!
+
+Your ceremony was everything I hoped it would be - filled with love, laughter, and genuine emotion. Some moments that will stay with me:
+
+• The way you both lit up when you saw each other
+• {{ partner2_name }}, your reaction during the vows was priceless
+• The laughter from your guests during [SPECIFIC MOMENT]
+• That perfect kiss at the end - couldn't have choreographed it better!
+
+You two are naturals, and your love for each other was felt by everyone present.
+
+📸 CEREMONY MEMORIES:
+I've attached a few photos I took during the ceremony. I hope they bring back all those wonderful feelings from your special day!
+
+📋 OFFICIAL PAPERWORK:
+✅ Your marriage certificate has been lodged with Births, Deaths & Marriages
+✅ You should receive your official certificate in 4-6 weeks
+✅ If you need it sooner, you can apply for an expedited certificate online
+
+🌟 WOULD YOU HELP OTHER COUPLES?
+
+Your experience helps me provide the best service possible. Would you mind taking 2 minutes to share your thoughts?
+
+⭐ Leave a Google Review: [GOOGLE_REVIEW_LINK]
+⭐ Facebook Review: [FACEBOOK_REVIEW_LINK]
+⭐ Quick Feedback Form: [FEEDBACK_FORM_LINK]
+
+Your review helps other couples find me and know what to expect. Any feedback, positive suggestions, or testimonials would mean the world to me!
+
+💌 TESTIMONIAL REQUEST:
+If you'd be happy for me to use a quote from you on my website or marketing materials, I'd be honored. Even something simple like:
+
+"[Your experience working with me]" - {{ partner1_name }} & {{ partner2_name }}, {{ ceremony_date }}
+
+📱 STAY CONNECTED:
+I'd love to stay in touch and hear about your adventures as newlyweds!
+
+• Instagram: @[CELEBRANT_INSTAGRAM]
+• Facebook: [CELEBRANT_FACEBOOK]
+• Website: [CELEBRANT_WEBSITE]
+
+🎊 ANNIVERSARY WISHES:
+I've added {{ ceremony_date }} to my calendar and will be sending anniversary wishes each year. It's one of my favorite traditions!
+
+💝 THANK YOU:
+
+Thank you for choosing me to be part of your love story. It's couples like you who make me absolutely love what I do. Your trust in me to create and deliver your ceremony was not taken lightly.
+
+I wish you both a lifetime of happiness, adventure, and love that grows stronger with each passing year.
+
+Congratulations again, and enjoy married life!
+
+With love and best wishes,
+
+{{ celebrant_name }}
+Marriage Celebrant
+
+{{ celebrant_email }}
+{{ celebrant_phone }}
+
+P.S. I hope you're planning an amazing honeymoon! Can't wait to hear about your adventures when you get back. 🏝️✈️
+
+---
+
+"Being deeply loved by someone gives you strength, while loving someone deeply gives you courage." - Lao Tzu 

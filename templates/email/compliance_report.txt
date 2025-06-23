@@ -1,0 +1,97 @@
+Subject: Weekly Legal Forms Compliance Report - {{ organization_name }}
+
+Dear {{ celebrant_name }},
+
+Here is your weekly compliance report for legal form submissions:
+
+📊 COMPLIANCE SUMMARY - Week of {{ report_date }}
+═══════════════════════════════════════════════════
+
+📋 FORM STATUS OVERVIEW:
+• Total Active Forms: {{ total_forms }}
+• Completed Forms: {{ completed_forms }} ({{ compliance_rate }}%)
+• In Progress: {{ in_progress_forms }}
+• Not Started: {{ not_started_forms }}
+
+⚠️  URGENT ATTENTION REQUIRED:
+• Overdue Forms: {{ overdue_forms }}
+• Critical Deadlines (≤3 days): {{ critical_forms }}
+
+📅 UPCOMING DEADLINES (Next 30 Days):
+• Forms Due Soon: {{ upcoming_forms }}
+
+{% if overdue_forms > 0 %}
+🚨 OVERDUE FORMS - IMMEDIATE ACTION REQUIRED:
+{% for form in overdue_list %}
+• {{ form.couple_names }} - {{ form.form_type }} ({{ form.days_overdue }} days overdue)
+  Ceremony: {{ form.ceremony_date }}
+  Contact: {{ form.couple_email }}
+{% endfor %}
+{% endif %}
+
+{% if critical_forms > 0 %}
+⏰ CRITICAL DEADLINES (≤3 Days):
+{% for form in critical_list %}
+• {{ form.couple_names }} - {{ form.form_type }} (Due: {{ form.deadline }})
+  Ceremony: {{ form.ceremony_date }}
+  Contact: {{ form.couple_email }}
+{% endfor %}
+{% endif %}
+
+{% if upcoming_forms > 0 %}
+📅 UPCOMING DEADLINES (Next 30 Days):
+{% for form in upcoming_list %}
+• {{ form.couple_names }} - {{ form.form_type }} (Due: {{ form.deadline }})
+  Ceremony: {{ form.ceremony_date }}
+  Days Remaining: {{ form.days_remaining }}
+{% endfor %}
+{% endif %}
+
+📈 PERFORMANCE METRICS:
+• Average Response Time: {{ avg_response_time }} days
+• Completion Rate: {{ completion_rate }}%
+• On-Time Submission Rate: {{ ontime_rate }}%
+
+🎯 RECOMMENDATIONS:
+{% if compliance_rate < 80 %}
+• Compliance rate is below 80% - consider more frequent reminders
+{% endif %}
+{% if overdue_forms > 0 %}
+• {{ overdue_forms }} forms are overdue - immediate follow-up required
+{% endif %}
+{% if critical_forms > 0 %}
+• {{ critical_forms }} forms have critical deadlines - urgent action needed
+{% endif %}
+
+🔗 QUICK ACTIONS:
+• Review Dashboard: {{ dashboard_url }}
+• Send Bulk Reminders: {{ bulk_reminder_url }}
+• Generate Detailed Report: {{ detailed_report_url }}
+
+📞 COUPLES NEEDING FOLLOW-UP:
+{% for couple in followup_list %}
+• {{ couple.names }} ({{ couple.phone }}, {{ couple.email }})
+  Forms: {{ couple.pending_forms }}
+  Last Contact: {{ couple.last_contact }}
+{% endfor %}
+
+💡 TIPS FOR BETTER COMPLIANCE:
+• Send personalized reminders 30, 14, and 7 days before deadlines
+• Follow up with phone calls for overdue forms
+• Provide clear instructions and examples
+• Offer assistance with form completion
+
+═══════════════════════════════════════════════════
+
+This automated report helps you stay on top of legal compliance requirements. 
+For urgent matters, please take immediate action to contact couples with overdue forms.
+
+Best regards,
+Celebrant Portal Legal Forms System
+
+Dashboard: {{ dashboard_url }}
+Support: {{ support_email }}
+
+---
+Report generated: {{ generated_at }}
+Next report: {{ next_report_date }} 
