@@ -39,8 +39,13 @@ env = os.environ.get('FLASK_ENV', 'default')
 app.config.from_object(config[env])
 
 # Initialize Celery
-from celery_app import make_celery
-celery = make_celery(app)
+try:
+    from celery_app import make_celery
+    celery = make_celery(app)
+    logger.info("Celery initialized successfully")
+except ImportError as e:
+    logger.warning(f"Could not initialize Celery: {e}")
+    celery = None
 
 # Configure logging
 logging.basicConfig(
@@ -955,6 +960,11 @@ def export_report():
         return jsonify({'success': False, 'error': str(e)})
 
 # Health Check and Monitoring Endpoints
+@app.route('/health')
+def health():
+    """Simple health check for Railway."""
+    return jsonify({'status': 'healthy', 'timestamp': datetime.now().isoformat()})
+
 @app.route('/api/health')
 def health_check():
     """Basic health check endpoint."""
@@ -1609,6 +1619,17 @@ except ImportError as e:
     logger.warning(f"Could not register Google Maps routes: {e}")
 
 if __name__ == '__main__':
+    # Ensure database directory exists
+    import os
+    database_dir = os.path.join(os.path.dirname(__file__), 'database')
+    if not os.path.exists(database_dir):
+        os.makedirs(database_dir)
+    
+    # Ensure uploads directory exists
+    uploads_dir = os.path.join(os.path.dirname(__file__), 'uploads')
+    if not os.path.exists(uploads_dir):
+        os.makedirs(uploads_dir)
+    
     with app.app_context():
         db.create_all()
     # Only use debug mode in development
