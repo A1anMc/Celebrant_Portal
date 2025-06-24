@@ -38,15 +38,6 @@ CORS(app, origins=['http://localhost:3000'], supports_credentials=True)
 env = os.environ.get('FLASK_ENV', 'default')
 app.config.from_object(config[env])
 
-# Initialize Celery
-try:
-    from celery_app import make_celery
-    celery = make_celery(app)
-    logger.info("Celery initialized successfully")
-except ImportError as e:
-    logger.warning(f"Could not initialize Celery: {e}")
-    celery = None
-
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
@@ -57,6 +48,15 @@ logging.basicConfig(
     ]
 )
 logger = logging.getLogger(__name__)
+
+# Initialize Celery
+try:
+    from celery_app import make_celery
+    celery = make_celery(app)
+    logger.info("Celery initialized successfully")
+except ImportError as e:
+    logger.warning(f"Could not initialize Celery: {e}")
+    celery = None
 
 # Initialize extensions
 db.init_app(app)
