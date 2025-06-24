@@ -16,6 +16,7 @@ Flask-CORS==4.0.0
 SQLAlchemy==1.4.50  # Pinned to avoid 2.0 incompatibilities
 alembic==1.12.1
 psycopg2-binary==2.9.9  # PostgreSQL support
+PyMySQL==1.1.0  # MySQL support
 
 # Authentication & Validation
 email-validator==2.1.0
