@@ -20,7 +20,13 @@ from sqlalchemy.sql.sqltypes import Integer, String, Text, Boolean, DateTime, Da
 from sqlalchemy.orm import relationship
 from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 import docx
-from flask_cors import CORS
+
+# Optional CORS support
+try:
+    from flask_cors import CORS
+    CORS_AVAILABLE = True
+except ImportError:
+    CORS_AVAILABLE = False
 
 # Local imports
 from config import config
@@ -30,9 +36,6 @@ from models import db, User, Couple, CeremonyTemplate, ImportedName, ImportSessi
 
 # Initialize Flask app
 app = Flask(__name__)
-
-# Enable CORS for React frontend
-CORS(app, origins=['http://localhost:3000'], supports_credentials=True)
 
 # Load configuration
 env = os.environ.get('FLASK_ENV', 'default')
@@ -48,6 +51,13 @@ logging.basicConfig(
     ]
 )
 logger = logging.getLogger(__name__)
+
+# Enable CORS for React frontend if available
+if CORS_AVAILABLE:
+    CORS(app, origins=['http://localhost:3000'], supports_credentials=True)
+    logger.info("CORS enabled for React frontend")
+else:
+    logger.warning("Flask-CORS not available, CORS disabled")
 
 # Initialize Celery
 try:
