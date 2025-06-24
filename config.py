@@ -66,14 +66,8 @@ class ProductionConfig(Config):
     database_url = os.environ.get('DATABASE_URL')
     if database_url:
         if database_url.startswith('postgres://'):
-            # Heroku provides DATABASE_URL starting with 'postgres://', but SQLAlchemy requires 'postgresql://'
+            # Heroku/Railway provides DATABASE_URL starting with 'postgres://', but SQLAlchemy requires 'postgresql://'
             database_url = database_url.replace('postgres://', 'postgresql://', 1)
-        elif database_url.startswith('mysql://'):
-            # MySQL URL - add PyMySQL driver
-            if '?' in database_url:
-                database_url = database_url.replace('mysql://', 'mysql+pymysql://', 1)
-            else:
-                database_url = database_url.replace('mysql://', 'mysql+pymysql://', 1) + '?charset=utf8mb4'
     
     SQLALCHEMY_DATABASE_URI = database_url or \
         'sqlite:///' + os.path.join(os.path.abspath(os.path.dirname(__file__)), 'database', 'celebrant_prod.db')
