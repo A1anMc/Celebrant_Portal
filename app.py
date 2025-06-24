@@ -129,6 +129,13 @@ def login():
     if form.validate_on_submit():
         # Find user by email (across all organizations for now)
         user = User.query.filter_by(email=form.email.data).first()
+        logger.info(f"Login attempt: email={form.email.data}, user_found={user is not None}")
+        if user:
+            logger.info(f"User: email={user.email}, is_active={user.is_active}, is_admin={user.is_admin}, org_id={user.organization_id}")
+            password_ok = user.check_password(form.password.data)
+            logger.info(f"Password check: {password_ok}")
+        else:
+            logger.info("No user found with that email.")
         if user and user.check_password(form.password.data):
             if user.is_active:
                 login_user(user)
@@ -142,7 +149,7 @@ def login():
     elif form.errors:
         # Log form validation errors
         logger.warning(f"Form validation errors: {form.errors}")
-    
+        print(f"Form validation errors: {form.errors}")
     return render_template('login.html', form=form)
 
 @app.route('/logout')
