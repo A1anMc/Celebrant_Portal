@@ -1,43 +1,65 @@
 from pydantic_settings import BaseSettings
-from typing import Optional
+from typing import List, Optional
 import os
 
 
 class Settings(BaseSettings):
-    # Application settings
-    app_name: str = "Melbourne Celebrant Portal API"
-    app_version: str = "1.0.0"
-    debug: bool = False
+    # App settings
+    app_name: str = "Melbourne Celebrant Portal"
+    app_version: str = "2.0.0"
+    environment: str = "development"
+    debug: bool = True
     
-    # Database settings
+    # Security
+    secret_key: str = "your-secret-key-here"
+    access_token_expire_minutes: int = 60
+    refresh_token_expire_days: int = 30
+    
+    # Database
     database_url: str = "sqlite:///./celebrant_portal.db"
     
-    # Security settings
-    secret_key: str = "your-secret-key-change-this-in-production"
-    algorithm: str = "HS256"
-    access_token_expire_minutes: int = 30
-    refresh_token_expire_days: int = 7
+    # CORS
+    cors_origins: List[str] = ["*"]
     
-    # CORS settings
-    cors_origins: list = ["http://localhost:3000", "http://127.0.0.1:3000"]
-    
-    # Logging settings
+    # Logging
     log_level: str = "INFO"
     
-    # File upload settings
-    max_file_size: int = 10 * 1024 * 1024  # 10MB
-    upload_directory: str = "uploads"
+    # Google Maps API
+    google_maps_api_key: Optional[str] = None
     
-    # Email settings (for future use)
-    smtp_server: Optional[str] = None
-    smtp_port: Optional[int] = None
-    smtp_username: Optional[str] = None
-    smtp_password: Optional[str] = None
+    # Celebrant business settings
+    celebrant_home_address: str = "Melbourne, VIC, Australia"
+    travel_fee_per_km: float = 1.50
+    minimum_travel_fee: float = 50.00
+    maximum_travel_distance: int = 100
+    
+    # Email settings (Brevo)
+    brevo_api_key: Optional[str] = None
+    brevo_sender_email: str = "admin@melbournecelebrant.com"
+    brevo_sender_name: str = "Melbourne Celebrant"
     
     class Config:
         env_file = ".env"
         case_sensitive = False
+        extra = "ignore"  # Ignore extra environment variables
+    
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        
+        # Handle database URL format conversion for Render
+        if self.database_url.startswith("postgres://"):
+            # Convert postgres:// to postgresql:// for SQLAlchemy compatibility
+            self.database_url = self.database_url.replace("postgres://", "postgresql://", 1)
+        
+        # Set debug based on environment
+        if self.environment.lower() == "production":
+            self.debug = False
+        
+        # Validate required settings in production
+        if self.environment.lower() == "production":
+            if self.secret_key == "your-secret-key-here":
+                raise ValueError("SECRET_KEY must be set in production")
 
 
-# Create global settings instance
+# Create settings instance
 settings = Settings() 

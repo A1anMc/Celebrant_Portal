@@ -7,17 +7,28 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-# Create SQLAlchemy engine with SQLite threading configuration
-engine = create_engine(
-    settings.database_url,
-    pool_pre_ping=True,
-    echo=settings.debug,
-    poolclass=StaticPool,
-    connect_args={
-        "check_same_thread": False,
-        "timeout": 20
-    }
-)
+# Configure engine based on database type
+if settings.database_url.startswith("postgresql://") or settings.database_url.startswith("postgres://"):
+    # PostgreSQL configuration
+    engine = create_engine(
+        settings.database_url,
+        pool_pre_ping=True,
+        echo=settings.debug,
+        pool_size=10,
+        max_overflow=20
+    )
+else:
+    # SQLite configuration (for development)
+    engine = create_engine(
+        settings.database_url,
+        pool_pre_ping=True,
+        echo=settings.debug,
+        poolclass=StaticPool,
+        connect_args={
+            "check_same_thread": False,
+            "timeout": 20
+        }
+    )
 
 # Create SessionLocal class
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
@@ -42,6 +53,9 @@ def get_db() -> Session:
 def create_tables():
     """Create all database tables."""
     try:
+        # Import all models to ensure they are registered with Base
+        from app.models import user, couple, ceremony, invoice, legal_form, template, travel_log
+        
         Base.metadata.create_all(bind=engine)
         logger.info("Database tables created successfully")
     except Exception as e:

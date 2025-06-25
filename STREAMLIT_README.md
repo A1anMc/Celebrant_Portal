@@ -88,4 +88,4 @@ The app uses SQLite for data storage:
 
 ---
 
-**Ready to use! No more Railway headaches! 🎉** 
+**Ready to use! Simple and reliable deployment! 🎉** 

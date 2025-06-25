@@ -209,9 +209,9 @@ The backend is **production-ready**. Next phase will include:
 - **PDF Generation**: Automated contract and invoice PDFs
 
 ### **Deployment Options**
-- **Backend**: Railway, Digital Ocean, or AWS
-- **Frontend**: Vercel or Netlify
-- **Database**: PostgreSQL on Railway or AWS RDS
+- **Backend**: Render (current), Digital Ocean, or AWS
+- **Frontend**: Vercel (planned) or Netlify
+- **Database**: PostgreSQL on Render (current) or AWS RDS
 
 ---
 
