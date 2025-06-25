@@ -43,7 +43,7 @@ export default function RootLayout({
       </head>
       <body className="font-sans antialiased bg-background text-foreground">
         <AuthProvider>
-          {children}
+        {children}
         </AuthProvider>
       </body>
     </html>

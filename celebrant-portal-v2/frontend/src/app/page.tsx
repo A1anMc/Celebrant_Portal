@@ -74,18 +74,18 @@ export default function Home() {
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
               <Button
                 size="lg"
-                onClick={() => router.push('/login')}
+                onClick={() => router.push('/beta')}
                 className="bg-primary hover:bg-primary-dark text-white px-8 py-3 text-lg font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-200"
               >
-                Sign In to Your Portal
+                Join Beta - Free Access
               </Button>
               <Button
                 variant="outline"
                 size="lg"
-                onClick={() => router.push('/demo')}
+                onClick={() => router.push('/login')}
                 className="border-primary text-primary hover:bg-primary hover:text-white px-8 py-3 text-lg font-semibold rounded-lg transition-all duration-200"
               >
-                View Demo
+                Sign In
               </Button>
             </div>
           </div>
@@ -133,10 +133,10 @@ export default function Home() {
           </p>
           <Button
             size="lg"
-            onClick={() => router.push('/login')}
+            onClick={() => router.push('/beta')}
             className="bg-primary hover:bg-primary-dark text-white px-10 py-4 text-xl font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-200"
           >
-            Get Started Today
+            Join Beta Waitlist
           </Button>
         </div>
       </div>
