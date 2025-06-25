@@ -1,21 +1,26 @@
 from datetime import datetime, timedelta
 from typing import Optional, Union
-from jose import JWTError, jwt
-from passlib.context import CryptContext
+import jwt
+from argon2 import PasswordHasher
+from argon2.exceptions import VerifyMismatchError
 from app.config import settings
 
-# Password hashing
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# Password hashing with argon2
+ph = PasswordHasher()
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Verify a plain password against its hash."""
-    return pwd_context.verify(plain_password, hashed_password)
+    try:
+        ph.verify(hashed_password, plain_password)
+        return True
+    except VerifyMismatchError:
+        return False
 
 
 def get_password_hash(password: str) -> str:
     """Hash a password."""
-    return pwd_context.hash(password)
+    return ph.hash(password)
 
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
@@ -27,7 +32,7 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
         expire = datetime.utcnow() + timedelta(minutes=settings.access_token_expire_minutes)
     
     to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(to_encode, settings.secret_key, algorithm=settings.algorithm)
+    encoded_jwt = jwt.encode(to_encode, settings.secret_key, algorithm="HS256")
     return encoded_jwt
 
 
@@ -36,16 +41,16 @@ def create_refresh_token(data: dict) -> str:
     to_encode = data.copy()
     expire = datetime.utcnow() + timedelta(days=settings.refresh_token_expire_days)
     to_encode.update({"exp": expire, "type": "refresh"})
-    encoded_jwt = jwt.encode(to_encode, settings.secret_key, algorithm=settings.algorithm)
+    encoded_jwt = jwt.encode(to_encode, settings.secret_key, algorithm="HS256")
     return encoded_jwt
 
 
 def verify_token(token: str) -> Optional[dict]:
     """Verify and decode a JWT token."""
     try:
-        payload = jwt.decode(token, settings.secret_key, algorithms=[settings.algorithm])
+        payload = jwt.decode(token, settings.secret_key, algorithms=["HS256"])
         return payload
-    except JWTError:
+    except jwt.InvalidTokenError:
         return None
 
 
