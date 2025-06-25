@@ -17,8 +17,8 @@ app = FastAPI(
     title=settings.app_name,
     version=settings.app_version,
     description="Professional celebrant practice management system",
-    docs_url="/docs" if settings.debug else None,
-    redoc_url="/redoc" if settings.debug else None,
+    docs_url="/docs",  # Always enable docs for API testing
+    redoc_url="/redoc",  # Always enable redoc
 )
 
 # Add CORS middleware
@@ -30,11 +30,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Add trusted host middleware (optional, for production)
-if not settings.debug:
+# Add trusted host middleware for production
+if settings.is_production:
     app.add_middleware(
         TrustedHostMiddleware,
-        allowed_hosts=["localhost", "127.0.0.1", "*.vercel.app"]
+        allowed_hosts=["localhost", "127.0.0.1", "*.onrender.com", "*.vercel.app"]
     )
 
 
@@ -55,14 +55,15 @@ async def root():
     return {
         "message": "Melbourne Celebrant Portal API",
         "version": settings.app_version,
-        "status": "healthy"
+        "status": "healthy",
+        "environment": settings.environment
     }
 
 
 @app.get("/health")
 async def health_check():
     """Health check endpoint."""
-    return {"status": "healthy", "timestamp": "2024-12-30T12:00:00Z"}
+    return {"status": "healthy", "environment": settings.environment}
 
 
 # Import and include routers
