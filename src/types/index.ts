@@ -1,201 +1,248 @@
-// User and Authentication Types
+// Melbourne Celebrant Portal - Type Definitions
+// Updated to match backend Pydantic schemas and SQLAlchemy models
+
+// ===========================================
+// USER TYPES
+// ===========================================
+
 export interface User {
   id: number;
   email: string;
-  full_name: string;
+  name: string; // FIX: Changed from full_name to name to match backend
   phone?: string;
   business_name?: string;
-  business_address?: string;
-  abn?: string;
-  role: 'admin' | 'celebrant' | 'assistant';
+  role: 'admin' | 'celebrant' | 'user';
   is_active: boolean;
+  is_verified: boolean;
   created_at: string;
-  updated_at: string;
-  preferences?: UserPreferences;
+  updated_at?: string;
 }
 
-export interface UserPreferences {
-  theme: 'light' | 'dark';
-  notifications_enabled: boolean;
-  default_ceremony_duration: number;
-  default_travel_rate: number;
-  timezone: string;
-}
+// ===========================================
+// COUPLE TYPES
+// ===========================================
 
-export interface LoginRequest {
-  email: string;
-  password: string;
-}
+export type CoupleStatus = 'inquiry' | 'consultation' | 'booked' | 'confirmed' | 'completed' | 'cancelled';
 
-export interface LoginResponse {
-  access_token: string;
-  refresh_token: string;
-  token_type: string;
-  expires_in: number;
-  user: User;
-}
-
-// Couple and Ceremony Types
-export interface Partner {
-  first_name: string;
-  last_name: string;
-  email?: string;
-  phone?: string;
-  address?: string;
-  date_of_birth?: string;
-}
-
+// FIX: Updated to match backend flattened structure
 export interface Couple {
   id: number;
-  partner1: Partner;
-  partner2: Partner;
+  // Partner 1 fields
+  partner_1_first_name: string;
+  partner_1_last_name: string;
+  partner_1_email?: string;
+  partner_1_phone?: string;
+  partner_1_address?: string;
+  partner_1_date_of_birth?: string;
+  partner_1_place_of_birth?: string;
+  partner_1_occupation?: string;
+  partner_1_nationality?: string;
+  partner_1_marital_status?: string;
+  partner_1_father_name?: string;
+  partner_1_mother_name?: string;
+  
+  // Partner 2 fields
+  partner_2_first_name: string;
+  partner_2_last_name: string;
+  partner_2_email?: string;
+  partner_2_phone?: string;
+  partner_2_address?: string;
+  partner_2_date_of_birth?: string;
+  partner_2_place_of_birth?: string;
+  partner_2_occupation?: string;
+  partner_2_nationality?: string;
+  partner_2_marital_status?: string;
+  partner_2_father_name?: string;
+  partner_2_mother_name?: string;
+  
+  // Ceremony details
   ceremony_date?: string;
   ceremony_time?: string;
-  ceremony_venue?: string;
-  ceremony_address?: string;
-  ceremony_type: 'wedding' | 'commitment' | 'renewal' | 'naming' | 'funeral';
-  status: 'enquiry' | 'booked' | 'confirmed' | 'completed' | 'cancelled';
-  package_type?: string;
-  total_fee?: number;
-  deposit_paid?: number;
-  balance_due?: number;
+  venue_name?: string;
+  venue_address?: string;
+  venue_contact?: string;
+  
+  // Status and metadata
+  status: CoupleStatus;
   notes?: string;
-  contact_preference: 'email' | 'phone' | 'both';
-  referral_source?: string;
+  estimated_guests?: number;
   special_requirements?: string;
-  guest_count?: number;
-  rehearsal_required: boolean;
-  rehearsal_date?: string;
-  rehearsal_time?: string;
-  created_at: string;
-  updated_at: string;
+  referral_source?: string;
+  
+  // System fields
   user_id: number;
+  created_at: string;
+  updated_at?: string;
 }
 
-export interface CoupleCreate {
-  partner1: Partner;
-  partner2: Partner;
-  ceremony_date?: string;
-  ceremony_time?: string;
-  ceremony_venue?: string;
-  ceremony_address?: string;
-  ceremony_type: 'wedding' | 'commitment' | 'renewal' | 'naming' | 'funeral';
-  status?: 'enquiry' | 'booked' | 'confirmed' | 'completed' | 'cancelled';
-  package_type?: string;
-  total_fee?: number;
-  deposit_paid?: number;
-  balance_due?: number;
-  notes?: string;
-  contact_preference?: 'email' | 'phone' | 'both';
-  referral_source?: string;
-  special_requirements?: string;
-  guest_count?: number;
-  rehearsal_required?: boolean;
-  rehearsal_date?: string;
-  rehearsal_time?: string;
-}
+// ===========================================
+// LEGAL FORM TYPES
+// ===========================================
 
-// Legal Forms Types
+export type LegalFormType = 'noim' | 'marriage_certificate' | 'ceremony_script' | 'vows';
+export type LegalFormStatus = 'draft' | 'pending' | 'submitted' | 'approved' | 'completed';
+
 export interface LegalForm {
   id: number;
   couple_id: number;
-  form_type: 'noim' | 'marriage_certificate' | 'statutory_declaration' | 'other';
-  form_name: string;
-  status: 'pending' | 'submitted' | 'approved' | 'rejected';
-  submission_date?: string;
-  approval_date?: string;
-  expiry_date?: string;
-  file_path?: string;
+  form_type: LegalFormType;
+  status: LegalFormStatus;
+  form_data: Record<string, any>;
+  generated_at: string;
+  submitted_at?: string;
+  deadline_date?: string;
   notes?: string;
-  reminder_sent: boolean;
-  created_at: string;
-  updated_at: string;
-  couple?: Couple;
-}
-
-export interface LegalFormCreate {
-  couple_id: number;
-  form_type: 'noim' | 'marriage_certificate' | 'statutory_declaration' | 'other';
-  form_name: string;
-  status?: 'pending' | 'submitted' | 'approved' | 'rejected';
-  submission_date?: string;
-  approval_date?: string;
-  expiry_date?: string;
-  file_path?: string;
-  notes?: string;
-}
-
-// Template Types
-export interface CeremonyTemplate {
-  id: number;
-  name: string;
-  description?: string;
-  category: 'wedding' | 'commitment' | 'renewal' | 'naming' | 'funeral';
-  content: string;
-  is_default: boolean;
-  usage_count: number;
-  created_at: string;
-  updated_at: string;
   user_id: number;
+  created_at: string;
+  updated_at?: string;
 }
 
-export interface TemplateCreate {
-  name: string;
-  description?: string;
-  category: 'wedding' | 'commitment' | 'renewal' | 'naming' | 'funeral';
-  content: string;
-  is_default?: boolean;
-}
+// ===========================================
+// CEREMONY TYPES
+// ===========================================
 
-// Invoice Types
-export interface InvoiceItem {
+export interface Ceremony {
   id: number;
-  description: string;
-  quantity: number;
-  unit_price: number;
-  total_price: number;
-  gst_amount: number;
+  couple_id: number;
+  ceremony_date: string;
+  ceremony_time?: string;
+  venue_name?: string;
+  venue_address?: string;
+  venue_contact?: string;
+  ceremony_type?: string;
+  estimated_guests?: number;
+  special_requirements?: string;
+  status: 'planned' | 'confirmed' | 'completed' | 'cancelled';
+  notes?: string;
+  user_id: number;
+  created_at: string;
+  updated_at?: string;
 }
+
+// ===========================================
+// INVOICE TYPES
+// ===========================================
+
+export type InvoiceStatus = 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled';
 
 export interface Invoice {
   id: number;
   couple_id: number;
   invoice_number: string;
-  issue_date: string;
-  due_date: string;
-  status: 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled';
-  subtotal: number;
-  gst_amount: number;
-  total_amount: number;
-  paid_amount: number;
-  payment_date?: string;
-  payment_method?: string;
+  amount: number;
+  status: InvoiceStatus;
+  due_date?: string;
+  paid_date?: string;
   notes?: string;
-  items: InvoiceItem[];
+  user_id: number;
   created_at: string;
-  updated_at: string;
-  couple?: Couple;
+  updated_at?: string;
 }
 
-export interface InvoiceCreate {
-  couple_id: number;
-  due_date: string;
-  items: {
-    description: string;
-    quantity: number;
-    unit_price: number;
-  }[];
+// ===========================================
+// TEMPLATE TYPES
+// ===========================================
+
+export interface CeremonyTemplate {
+  id: number;
+  name: string;
+  description?: string;
+  template_type: 'ceremony' | 'vows' | 'reading' | 'blessing';
+  content: string;
+  is_default: boolean;
+  user_id: number;
+  created_at: string;
+  updated_at?: string;
+}
+
+// ===========================================
+// TRAVEL LOG TYPES
+// ===========================================
+
+export interface TravelLog {
+  id: number;
+  couple_id?: number;
+  ceremony_id?: number;
+  travel_date: string;
+  destination: string;
+  distance_km: number;
+  purpose: string;
   notes?: string;
+  user_id: number;
+  created_at: string;
+  updated_at?: string;
 }
 
-// Dashboard Types
-export interface DashboardStats {
+// ===========================================
+// API RESPONSE TYPES
+// ===========================================
+
+export interface ApiResponse<T> {
+  data: T;
+  message?: string;
+  success: boolean;
+}
+
+export interface PaginatedResponse<T> {
+  items: T[];
+  total: number;
+  page: number;
+  per_page: number;
+  total_pages: number;
+}
+
+export interface ErrorResponse {
+  detail: string;
+  error_code?: string;
+}
+
+// ===========================================
+// FORM TYPES
+// ===========================================
+
+export interface LoginForm {
+  email: string;
+  password: string;
+}
+
+export interface RegisterForm {
+  email: string;
+  password: string;
+  name: string;
+  phone?: string;
+  business_name?: string;
+}
+
+export interface CoupleForm {
+  partner_1_first_name: string;
+  partner_1_last_name: string;
+  partner_1_email?: string;
+  partner_1_phone?: string;
+  partner_2_first_name: string;
+  partner_2_last_name: string;
+  partner_2_email?: string;
+  partner_2_phone?: string;
+  ceremony_date?: string;
+  ceremony_time?: string;
+  venue_name?: string;
+  venue_address?: string;
+  status?: CoupleStatus;
+  notes?: string;
+  estimated_guests?: number;
+}
+
+// ===========================================
+// DASHBOARD TYPES
+// ===========================================
+
+export interface DashboardMetrics {
   total_couples: number;
+  active_couples: number;
+  completed_ceremonies: number;
   upcoming_ceremonies: number;
-  pending_noim_forms: number;
-  total_revenue: number;
-  monthly_revenue: number;
-  overdue_invoices: number;
+  pending_forms: number;
+  revenue_this_month: number;
+  revenue_total: number;
 }
 
 export interface UpcomingWedding {
@@ -203,52 +250,61 @@ export interface UpcomingWedding {
   couple_names: string;
   ceremony_date: string;
   ceremony_time?: string;
-  venue?: string;
-  days_until: number;
+  venue_name?: string;
   status: string;
+  days_until: number;
 }
 
-export interface DashboardData {
-  stats: DashboardStats;
-  upcoming_weddings: UpcomingWedding[];
-  recent_enquiries: Couple[];
-  pending_tasks: {
-    noim_forms: LegalForm[];
-    overdue_invoices: Invoice[];
-  };
+export interface RecentActivity {
+  id: number;
+  type: 'couple_added' | 'form_generated' | 'ceremony_completed' | 'status_updated';
+  description: string;
+  timestamp: string;
+  couple_id?: number;
+  couple_names?: string;
 }
 
-// API Response Types
-export interface PaginatedResponse<T> {
-  items: T[];
-  total: number;
-  page: number;
-  size: number;
-  pages: number;
-}
+// ===========================================
+// SEARCH AND FILTER TYPES
+// ===========================================
 
 export interface SearchParams {
-  q?: string;
+  search?: string;
   page?: number;
-  size?: number;
+  per_page?: number;
   sort_by?: string;
   sort_order?: 'asc' | 'desc';
 }
 
-// Form Types
-export interface FormError {
-  field: string;
-  message: string;
+export interface CoupleSearchParams extends SearchParams {
+  status?: CoupleStatus;
 }
 
-export interface ApiError {
-  message: string;
-  status: number;
-  details?: any;
+export interface LegalFormSearchParams extends SearchParams {
+  couple_id?: number;
+  form_type?: LegalFormType;
+  status?: LegalFormStatus;
 }
 
-// UI State Types
-export type LoadingState = 'idle' | 'loading' | 'success' | 'error';
+// ===========================================
+// UTILITY TYPES
+// ===========================================
+
+export type Optional<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>;
+export type RequiredFields<T, K extends keyof T> = T & Required<Pick<T, K>>;
+
+// Helper type for creating new entities (without system fields)
+export type CreateEntity<T> = Omit<T, 'id' | 'created_at' | 'updated_at' | 'user_id'>;
+export type UpdateEntity<T> = Partial<Omit<T, 'id' | 'created_at' | 'updated_at' | 'user_id'>>;
+
+// ===========================================
+// COMPONENT PROP TYPES
+// ===========================================
+
+export interface BaseComponentProps {
+  className?: string;
+  children?: React.ReactNode;
+}
 
 export interface TableColumn<T> {
   key: keyof T;
@@ -257,27 +313,65 @@ export interface TableColumn<T> {
   render?: (value: any, item: T) => React.ReactNode;
 }
 
-export interface FilterOption {
-  value: string;
+export interface FormFieldProps {
   label: string;
+  name: string;
+  type?: string;
+  placeholder?: string;
+  required?: boolean;
+  error?: string;
+  value?: any;
+  onChange?: (value: any) => void;
 }
 
-// Travel and Reports (for future implementation)
-export interface TravelLog {
-  id: number;
-  couple_id: number;
-  date: string;
-  destination: string;
-  distance_km: number;
-  cost: number;
-  notes?: string;
-}
+// ===========================================
+// EXPORT ALL TYPES
+// ===========================================
 
-export interface ReportData {
-  period: string;
-  total_ceremonies: number;
-  total_revenue: number;
-  average_fee: number;
-  top_referral_sources: { source: string; count: number }[];
-  monthly_breakdown: { month: string; ceremonies: number; revenue: number }[];
-} 
+export type {
+  // Main entities
+  User,
+  Couple,
+  LegalForm,
+  Ceremony,
+  Invoice,
+  CeremonyTemplate,
+  TravelLog,
+  
+  // Enums
+  CoupleStatus,
+  LegalFormType,
+  LegalFormStatus,
+  InvoiceStatus,
+  
+  // API types
+  ApiResponse,
+  PaginatedResponse,
+  ErrorResponse,
+  
+  // Form types
+  LoginForm,
+  RegisterForm,
+  CoupleForm,
+  
+  // Dashboard types
+  DashboardMetrics,
+  UpcomingWedding,
+  RecentActivity,
+  
+  // Search types
+  SearchParams,
+  CoupleSearchParams,
+  LegalFormSearchParams,
+  
+  // Utility types
+  Optional,
+  RequiredFields,
+  CreateEntity,
+  UpdateEntity,
+  
+  // Component types
+  BaseComponentProps,
+  TableColumn,
+  FormFieldProps
+}; 

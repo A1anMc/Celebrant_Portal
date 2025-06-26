@@ -1,95 +1,126 @@
-import { api, apiRequest, tokenManager } from '@/lib/api';
-import { LoginRequest, LoginResponse, User } from '@/types';
+import { api } from '@/lib/api';
+
+export interface LoginRequest {
+  email: string;
+  password: string;
+}
+
+export interface LoginResponse {
+  access_token: string;
+  refresh_token: string;
+  token_type: string;
+  user: {
+    id: number;
+    email: string;
+    name: string;
+    role: string;
+    is_active: boolean;
+    is_verified: boolean;
+  };
+}
+
+export interface RegisterRequest {
+  email: string;
+  password: string;
+  name: string;
+  phone?: string;
+  business_name?: string;
+}
+
+export interface UserProfile {
+  id: number;
+  email: string;
+  name: string;
+  phone?: string;
+  business_name?: string;
+  role: string;
+  is_active: boolean;
+  is_verified: boolean;
+  created_at: string;
+  updated_at?: string;
+}
+
+export interface ChangePasswordRequest {
+  current_password: string;
+  new_password: string;
+}
 
 export const authService = {
-  // Login user
   login: async (credentials: LoginRequest): Promise<LoginResponse> => {
-    const formData = new FormData();
-    formData.append('username', credentials.email);
-    formData.append('password', credentials.password);
-
-    const response = await api.post('/api/auth/login', formData, {
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
+    const response = await api.post('/api/auth/login', {
+      email: credentials.email,
+      password: credentials.password
     });
-
-    const loginData = response.data;
     
-    // Store tokens
-    tokenManager.setToken(loginData.access_token);
-    if (loginData.refresh_token) {
-      tokenManager.setRefreshToken(loginData.refresh_token);
+    if (response.data.access_token) {
+      localStorage.setItem('access_token', response.data.access_token);
+      localStorage.setItem('refresh_token', response.data.refresh_token);
     }
-
-    return loginData;
+    
+    return response.data;
   },
 
-  // Logout user
+  register: async (userData: RegisterRequest): Promise<LoginResponse> => {
+    const response = await api.post('/api/auth/register', userData);
+    return response.data;
+  },
+
   logout: async (): Promise<void> => {
     try {
       await api.post('/api/auth/logout');
     } catch (error) {
-      // Continue with logout even if API call fails
       console.warn('Logout API call failed:', error);
     } finally {
-      tokenManager.clearTokens();
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('refresh_token');
     }
   },
 
-  // Get current user
-  getCurrentUser: async (): Promise<User> => {
-    return apiRequest<User>(() => api.get('/api/auth/me'));
+  getCurrentUser: async (): Promise<UserProfile> => {
+    const response = await api.get('/api/auth/me');
+    return response.data;
   },
 
-  // Refresh token
-  refreshToken: async (): Promise<LoginResponse> => {
-    const refreshToken = tokenManager.getRefreshToken();
+  updateProfile: async (profileData: Partial<UserProfile>): Promise<UserProfile> => {
+    const response = await api.put('/api/auth/me', profileData);
+    return response.data;
+  },
+
+  changePassword: async (passwordData: ChangePasswordRequest): Promise<void> => {
+    await api.post('/api/auth/change-password', passwordData);
+  },
+
+  refreshToken: async (): Promise<{ access_token: string; token_type: string }> => {
+    const refreshToken = localStorage.getItem('refresh_token');
     if (!refreshToken) {
       throw new Error('No refresh token available');
     }
 
     const response = await api.post('/api/auth/refresh', {
-      refresh_token: refreshToken,
+      refresh_token: refreshToken
     });
 
-    const loginData = response.data;
-    
-    // Update stored tokens
-    tokenManager.setToken(loginData.access_token);
-    if (loginData.refresh_token) {
-      tokenManager.setRefreshToken(loginData.refresh_token);
+    if (response.data.access_token) {
+      localStorage.setItem('access_token', response.data.access_token);
     }
 
-    return loginData;
+    return response.data;
   },
 
-  // Check if user is authenticated
+  getStoredToken: (): string | null => {
+    return localStorage.getItem('access_token');
+  },
+
   isAuthenticated: (): boolean => {
-    return tokenManager.getToken() !== null;
-  },
+    const token = localStorage.getItem('access_token');
+    if (!token) return false;
 
-  // Register new user (if needed)
-  register: async (userData: {
-    email: string;
-    password: string;
-    full_name: string;
-    phone?: string;
-    business_name?: string;
-  }): Promise<User> => {
-    return apiRequest<User>(() => api.post('/api/auth/register', userData));
-  },
-
-  // Update user profile
-  updateProfile: async (userData: Partial<User>): Promise<User> => {
-    return apiRequest<User>(() => api.put('/api/auth/profile', userData));
-  },
-
-  // Change password
-  changePassword: async (data: {
-    current_password: string;
-    new_password: string;
-  }): Promise<void> => {
-    return apiRequest<void>(() => api.post('/api/auth/change-password', data));
-  },
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      const currentTime = Date.now() / 1000;
+      return payload.exp > currentTime;
+    } catch {
+      return false;
+    }
+  }
 }; 

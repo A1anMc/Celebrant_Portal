@@ -6,11 +6,14 @@ from app.database import get_db
 from app.models.user import User
 from app.schemas.auth import UserLogin, UserRegister, Token, UserResponse, UserUpdate, PasswordChange
 from app.auth.utils import verify_password, get_password_hash, create_access_token, create_refresh_token
-from app.auth.dependencies import get_current_user, get_current_active_user
+from app.auth.dependencies import get_current_user, get_current_active_user, get_admin_user
+from app.config import settings
 import logging
+import jwt
+from jwt.exceptions import JWTError
 
 logger = logging.getLogger(__name__)
-router = APIRouter()
+router = APIRouter(prefix="/api/auth", tags=["Authentication"])
 
 
 @router.post("/login", response_model=Token)
@@ -44,8 +47,14 @@ async def login(user_credentials: UserLogin, db: Session = Depends(get_db)):
         db.commit()
         
         # Create tokens
-        access_token = create_access_token(data={"sub": str(user.id)})
-        refresh_token = create_refresh_token(data={"sub": str(user.id)})
+        access_token = create_access_token(
+            data={"sub": str(user.id)},
+            expires_delta=timedelta(minutes=settings.access_token_expire_minutes)
+        )
+        refresh_token = create_refresh_token(
+            data={"sub": str(user.id)},
+            expires_delta=timedelta(days=settings.refresh_token_expire_days)
+        )
         
         logger.info(f"User {user.email} logged in successfully")
         
@@ -66,8 +75,12 @@ async def login(user_credentials: UserLogin, db: Session = Depends(get_db)):
 
 
 @router.post("/register", response_model=UserResponse)
-async def register(user_data: UserRegister, db: Session = Depends(get_db)):
-    """Register a new user (admin only in production)."""
+async def register(
+    user_data: UserRegister, 
+    db: Session = Depends(get_db),
+    admin: User = Depends(get_admin_user)  # Only admins can create new users
+):
+    """Admin-only user registration endpoint"""
     try:
         # Check if user already exists
         existing_user = db.query(User).filter(User.email == user_data.email).first()
@@ -81,13 +94,13 @@ async def register(user_data: UserRegister, db: Session = Depends(get_db)):
         hashed_password = get_password_hash(user_data.password)
         new_user = User(
             email=user_data.email,
-            password_hash=hashed_password,
             name=user_data.name,
             phone=user_data.phone,
             business_name=user_data.business_name,
-            role="celebrant",
+            password_hash=hashed_password,
+            role="celebrant",  # Default role for new users
             is_active=True,
-            is_verified=True
+            is_verified=False
         )
         
         db.add(new_user)
@@ -181,17 +194,9 @@ async def change_password(
 async def refresh_token(refresh_token: str, db: Session = Depends(get_db)):
     """Refresh access token using refresh token."""
     try:
-        from app.auth.utils import verify_token
-        
-        # Verify refresh token
-        payload = verify_token(refresh_token)
-        if payload is None or payload.get("type") != "refresh":
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid refresh token"
-            )
-        
-        user_id = payload.get("sub")
+        # Verify and decode refresh token
+        payload = jwt.decode(refresh_token, settings.secret_key, algorithms=[ALGORITHM])
+        user_id: str = payload.get("sub")
         if user_id is None:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
@@ -207,8 +212,14 @@ async def refresh_token(refresh_token: str, db: Session = Depends(get_db)):
             )
         
         # Create new tokens
-        access_token = create_access_token(data={"sub": str(user.id)})
-        new_refresh_token = create_refresh_token(data={"sub": str(user.id)})
+        access_token = create_access_token(
+            data={"sub": str(user.id)},
+            expires_delta=timedelta(minutes=settings.access_token_expire_minutes)
+        )
+        new_refresh_token = create_refresh_token(
+            data={"sub": str(user.id)},
+            expires_delta=timedelta(days=settings.refresh_token_expire_days)
+        )
         
         return Token(
             access_token=access_token,

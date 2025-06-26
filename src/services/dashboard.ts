@@ -1,51 +1,90 @@
-import { api, apiRequest } from '@/lib/api';
-import { DashboardData, DashboardStats, UpcomingWedding } from '@/types';
+import { api } from '@/lib/api';
+
+export interface DashboardMetrics {
+  total_couples: number;
+  active_couples: number;
+  completed_ceremonies: number;
+  upcoming_ceremonies: number;
+  pending_forms: number;
+  revenue_this_month: number;
+  revenue_total: number;
+}
+
+export interface UpcomingWedding {
+  id: number;
+  couple_names: string;
+  ceremony_date: string;
+  ceremony_time?: string;
+  venue_name?: string;
+  status: string;
+  days_until: number;
+}
+
+export interface RecentActivity {
+  id: number;
+  type: 'couple_added' | 'form_generated' | 'ceremony_completed' | 'status_updated';
+  description: string;
+  timestamp: string;
+  couple_id?: number;
+  couple_names?: string;
+}
+
+export interface MonthlyRevenue {
+  month: string;
+  revenue: number;
+  ceremonies: number;
+}
 
 export const dashboardService = {
-  // Get complete dashboard data
-  getDashboardData: async (): Promise<DashboardData> => {
-    return apiRequest<DashboardData>(() => api.get('/api/dashboard'));
+  // FIX: Use actual backend endpoint /api/dashboard/metrics
+  getMetrics: async (): Promise<DashboardMetrics> => {
+    const response = await api.get('/api/dashboard/metrics');
+    return response.data;
   },
 
-  // Get dashboard statistics
-  getStats: async (): Promise<DashboardStats> => {
-    return apiRequest<DashboardStats>(() => api.get('/api/dashboard/stats'));
+  // FIX: Use actual backend endpoint /api/dashboard/upcoming-weddings
+  getUpcomingWeddings: async (): Promise<UpcomingWedding[]> => {
+    const response = await api.get('/api/dashboard/upcoming-weddings');
+    return response.data;
   },
 
-  // Get upcoming weddings
-  getUpcomingWeddings: async (limit: number = 5): Promise<UpcomingWedding[]> => {
-    return apiRequest<UpcomingWedding[]>(() => 
-      api.get(`/api/dashboard/upcoming-weddings?limit=${limit}`)
-    );
+  // FIX: Use actual backend endpoint /api/dashboard/recent-activity
+  getRecentActivity: async (): Promise<RecentActivity[]> => {
+    const response = await api.get('/api/dashboard/recent-activity');
+    return response.data;
   },
 
-  // Get recent enquiries
-  getRecentEnquiries: async (limit: number = 5) => {
-    return apiRequest(() => api.get(`/api/dashboard/recent-enquiries?limit=${limit}`));
+  // FIX: Use actual backend endpoint /api/dashboard/monthly-revenue
+  getMonthlyRevenue: async (): Promise<MonthlyRevenue[]> => {
+    const response = await api.get('/api/dashboard/monthly-revenue');
+    return response.data;
   },
 
-  // Get pending tasks
-  getPendingTasks: async () => {
-    return apiRequest(() => api.get('/api/dashboard/pending-tasks'));
+  // FIX: Use actual backend endpoint /api/dashboard/quick-stats
+  getQuickStats: async () => {
+    const response = await api.get('/api/dashboard/quick-stats');
+    return response.data;
   },
 
-  // Get revenue analytics
-  getRevenueAnalytics: async (period: 'month' | 'quarter' | 'year' = 'month') => {
-    return apiRequest(() => api.get(`/api/dashboard/revenue?period=${period}`));
-  },
+  // Helper function to get all dashboard data at once
+  getAllDashboardData: async () => {
+    try {
+      const [metrics, upcomingWeddings, recentActivity, monthlyRevenue] = await Promise.all([
+        dashboardService.getMetrics(),
+        dashboardService.getUpcomingWeddings(),
+        dashboardService.getRecentActivity(),
+        dashboardService.getMonthlyRevenue()
+      ]);
 
-  // Get ceremony type breakdown
-  getCeremonyTypeBreakdown: async () => {
-    return apiRequest(() => api.get('/api/dashboard/ceremony-types'));
-  },
-
-  // Get monthly booking trends
-  getBookingTrends: async (months: number = 12) => {
-    return apiRequest(() => api.get(`/api/dashboard/booking-trends?months=${months}`));
-  },
-
-  // Get referral source analytics
-  getReferralSources: async () => {
-    return apiRequest(() => api.get('/api/dashboard/referral-sources'));
-  },
+      return {
+        metrics,
+        upcomingWeddings,
+        recentActivity,
+        monthlyRevenue
+      };
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+      throw error;
+    }
+  }
 }; 

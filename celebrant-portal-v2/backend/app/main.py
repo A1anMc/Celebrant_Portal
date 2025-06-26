@@ -9,7 +9,7 @@ import traceback
 from app.config import settings
 from app.auth.router import router as auth_router
 from app.api import dashboard, couples, legal_forms
-from app.database import create_tables, engine
+from app.database import create_tables, engine, get_db
 from app.models.user import User
 from app.auth.utils import get_password_hash
 from sqlalchemy.orm import sessionmaker
@@ -17,10 +17,11 @@ from sqlalchemy import text
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO,
+    level=getattr(logging, settings.log_level),
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.StreamHandler(sys.stdout)
+        logging.FileHandler(settings.log_file),
+        logging.StreamHandler()
     ]
 )
 logger = logging.getLogger(__name__)
@@ -51,30 +52,28 @@ async def lifespan(app: FastAPI):
         
         # Create default admin user if it doesn't exist
         logger.info("Checking for admin user...")
-        db = SessionLocal()
-        try:
-            admin_user = db.query(User).filter(User.email == "admin@melbournecelebrant.com").first()
-            if not admin_user:
-                logger.info("Creating default admin user...")
-                admin_user = User(
-                    email="admin@melbournecelebrant.com",
-                    name="Admin User",
-                    phone="0400000000",
-                    is_active=True,
-                    is_verified=True,
-                    role="admin",
-                    password_hash=get_password_hash("admin123")
-                )
-                db.add(admin_user)
-                db.commit()
-                logger.info("Default admin user created successfully")
-            else:
-                logger.info("Admin user already exists")
-        except Exception as e:
-            logger.error(f"Error creating admin user: {e}")
-            db.rollback()
-        finally:
-            db.close()
+        with next(get_db()) as db:
+            try:
+                admin_user = db.query(User).filter(User.email == "admin@melbournecelebrant.com").first()
+                if not admin_user:
+                    logger.info("Creating default admin user...")
+                    admin_user = User(
+                        email="admin@melbournecelebrant.com",
+                        name="Admin User",
+                        phone="0400000000",
+                        is_active=True,
+                        is_verified=True,
+                        role="admin",
+                        password_hash=get_password_hash("admin123")
+                    )
+                    db.add(admin_user)
+                    db.commit()
+                    logger.info("Default admin user created successfully")
+                else:
+                    logger.info("Admin user already exists")
+            except Exception as e:
+                logger.error(f"Error creating admin user: {e}")
+                db.rollback()
             
         logger.info("Application startup completed successfully")
         yield
@@ -100,7 +99,7 @@ app = FastAPI(
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Configure this properly for production
+    allow_origins=settings.cors_origins,  # Use settings instead of ["*"]
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

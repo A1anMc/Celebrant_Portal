@@ -1,143 +1,170 @@
-import { api, apiRequest } from '@/lib/api';
-import { LegalForm, LegalFormCreate, PaginatedResponse, SearchParams } from '@/types';
+import { api } from '@/lib/api';
+
+export interface LegalForm {
+  id: number;
+  couple_id: number;
+  form_type: 'noim' | 'marriage_certificate' | 'ceremony_script' | 'vows';
+  status: 'draft' | 'pending' | 'submitted' | 'approved' | 'completed';
+  form_data: Record<string, any>;
+  generated_at: string;
+  submitted_at?: string;
+  deadline_date?: string;
+  notes?: string;
+  user_id: number;
+  created_at: string;
+  updated_at?: string;
+}
+
+export interface CreateLegalFormRequest {
+  couple_id: number;
+  form_type: 'noim' | 'marriage_certificate' | 'ceremony_script' | 'vows';
+  form_data: Record<string, any>;
+  deadline_date?: string;
+  notes?: string;
+}
+
+export interface LegalFormListResponse {
+  forms: LegalForm[];
+  total: number;
+  page: number;
+  per_page: number;
+  total_pages: number;
+}
+
+export interface NOIMTrackingItem {
+  id: number;
+  couple_names: string;
+  ceremony_date?: string;
+  noim_status: string;
+  deadline_date?: string;
+  days_remaining?: number;
+  is_overdue: boolean;
+}
 
 export const legalFormsService = {
-  // Get all legal forms with pagination and search
-  getLegalForms: async (params?: SearchParams): Promise<PaginatedResponse<LegalForm>> => {
+  // Get all legal forms with optional filtering
+  getForms: async (params: {
+    couple_id?: number;
+    form_type?: string;
+    status?: string;
+    page?: number;
+    per_page?: number;
+  } = {}): Promise<LegalFormListResponse> => {
     const searchParams = new URLSearchParams();
     
-    if (params?.q) searchParams.append('q', params.q);
-    if (params?.page) searchParams.append('page', params.page.toString());
-    if (params?.size) searchParams.append('size', params.size.toString());
-    if (params?.sort_by) searchParams.append('sort_by', params.sort_by);
-    if (params?.sort_order) searchParams.append('sort_order', params.sort_order);
+    if (params.couple_id) searchParams.append('couple_id', params.couple_id.toString());
+    if (params.form_type) searchParams.append('form_type', params.form_type);
+    if (params.status) searchParams.append('status', params.status);
+    if (params.page) searchParams.append('page', params.page.toString());
+    if (params.per_page) searchParams.append('per_page', params.per_page.toString());
 
-    const queryString = searchParams.toString();
-    const url = `/api/legal-forms${queryString ? `?${queryString}` : ''}`;
-    
-    return apiRequest<PaginatedResponse<LegalForm>>(() => api.get(url));
+    const response = await api.get(`/api/legal-forms/?${searchParams.toString()}`);
+    return response.data;
   },
 
-  // Get legal form by ID
-  getLegalForm: async (id: number): Promise<LegalForm> => {
-    return apiRequest<LegalForm>(() => api.get(`/api/legal-forms/${id}`));
+  // Get a specific legal form by ID
+  getFormById: async (id: number): Promise<LegalForm> => {
+    const response = await api.get(`/api/legal-forms/${id}`);
+    return response.data;
   },
 
-  // Create new legal form
-  createLegalForm: async (formData: LegalFormCreate): Promise<LegalForm> => {
-    return apiRequest<LegalForm>(() => api.post('/api/legal-forms', formData));
+  // Create a new legal form
+  createForm: async (formData: CreateLegalFormRequest): Promise<LegalForm> => {
+    const response = await api.post('/api/legal-forms/', formData);
+    return response.data;
   },
 
-  // Update legal form
-  updateLegalForm: async (id: number, formData: Partial<LegalFormCreate>): Promise<LegalForm> => {
-    return apiRequest<LegalForm>(() => api.put(`/api/legal-forms/${id}`, formData));
+  // Update an existing legal form
+  updateForm: async (id: number, formData: Partial<CreateLegalFormRequest>): Promise<LegalForm> => {
+    const response = await api.put(`/api/legal-forms/${id}`, formData);
+    return response.data;
   },
 
-  // Delete legal form
-  deleteLegalForm: async (id: number): Promise<void> => {
-    return apiRequest<void>(() => api.delete(`/api/legal-forms/${id}`));
+  // Delete a legal form
+  deleteForm: async (id: number): Promise<void> => {
+    await api.delete(`/api/legal-forms/${id}`);
   },
 
-  // Get forms by couple ID
-  getFormsByCouple: async (coupleId: number): Promise<LegalForm[]> => {
-    return apiRequest<LegalForm[]>(() => api.get(`/api/legal-forms/couple/${coupleId}`));
+  // FIX: Use actual backend endpoint for NOIM tracking
+  getNOIMTracking: async (): Promise<NOIMTrackingItem[]> => {
+    const response = await api.get('/api/legal-forms/noim-tracking');
+    return response.data;
   },
 
-  // Get forms by status
-  getFormsByStatus: async (status: string): Promise<LegalForm[]> => {
-    return apiRequest<LegalForm[]>(() => api.get(`/api/legal-forms?status=${status}`));
-  },
-
-  // Get pending NOIM forms
-  getPendingNOIMForms: async (): Promise<LegalForm[]> => {
-    return apiRequest<LegalForm[]>(() => api.get('/api/legal-forms?form_type=noim&status=pending'));
-  },
-
-  // Get expiring forms
-  getExpiringForms: async (days: number = 30): Promise<LegalForm[]> => {
-    return apiRequest<LegalForm[]>(() => api.get(`/api/legal-forms/expiring?days=${days}`));
-  },
-
-  // Update form status
-  updateFormStatus: async (id: number, status: string, notes?: string): Promise<LegalForm> => {
-    return apiRequest<LegalForm>(() => 
-      api.patch(`/api/legal-forms/${id}/status`, { 
-        status, 
-        notes,
-        ...(status === 'submitted' && { submission_date: new Date().toISOString().split('T')[0] }),
-        ...(status === 'approved' && { approval_date: new Date().toISOString().split('T')[0] }),
-      })
-    );
-  },
-
-  // Upload form file
-  uploadFormFile: async (id: number, file: File): Promise<LegalForm> => {
-    const formData = new FormData();
-    formData.append('file', file);
-    
-    return apiRequest<LegalForm>(() => 
-      api.post(`/api/legal-forms/${id}/upload`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      })
-    );
-  },
-
-  // Download form file
-  downloadFormFile: async (id: number): Promise<Blob> => {
-    const response = await api.get(`/api/legal-forms/${id}/download`, {
-      responseType: 'blob',
+  // Generate a specific type of form
+  generateForm: async (coupleId: number, formType: string): Promise<LegalForm> => {
+    const response = await api.post('/api/legal-forms/generate', {
+      couple_id: coupleId,
+      form_type: formType
     });
     return response.data;
   },
 
-  // Send reminder for form
-  sendReminder: async (id: number, message?: string): Promise<void> => {
-    return apiRequest<void>(() => 
-      api.post(`/api/legal-forms/${id}/reminder`, { message })
-    );
+  // Submit a form (change status to submitted)
+  submitForm: async (id: number): Promise<LegalForm> => {
+    const response = await api.post(`/api/legal-forms/${id}/submit`);
+    return response.data;
   },
 
-  // Get form statistics
-  getFormStats: async (): Promise<{
-    total: number;
-    by_status: Record<string, number>;
-    by_type: Record<string, number>;
-    expiring_soon: number;
-    overdue: number;
-  }> => {
-    return apiRequest(() => api.get('/api/legal-forms/stats'));
+  // Download a form as PDF
+  downloadForm: async (id: number): Promise<Blob> => {
+    const response = await api.get(`/api/legal-forms/${id}/download`, {
+      responseType: 'blob'
+    });
+    return response.data;
   },
 
-  // Get NOIM deadline calculator
-  calculateNOIMDeadline: async (ceremonyDate: string): Promise<{
-    deadline: string;
-    days_remaining: number;
-    is_urgent: boolean;
-    is_overdue: boolean;
-  }> => {
-    return apiRequest(() => 
-      api.get(`/api/legal-forms/noim-deadline?ceremony_date=${ceremonyDate}`)
-    );
+  // Get forms by couple ID
+  getFormsByCouple: async (coupleId: number): Promise<LegalForm[]> => {
+    const response = await api.get(`/api/legal-forms/?couple_id=${coupleId}&per_page=100`);
+    return response.data.forms;
   },
 
-  // Get compliance checklist for couple
-  getComplianceChecklist: async (coupleId: number): Promise<{
-    couple_id: number;
-    ceremony_date: string;
-    required_forms: Array<{
-      form_type: string;
-      form_name: string;
-      status: string;
-      deadline?: string;
-      is_urgent: boolean;
-      is_complete: boolean;
-    }>;
-    compliance_score: number;
-    missing_forms: string[];
-    urgent_actions: string[];
-  }> => {
-    return apiRequest(() => api.get(`/api/legal-forms/compliance/${coupleId}`));
+  // Get pending forms (forms that need attention)
+  getPendingForms: async (): Promise<LegalForm[]> => {
+    const response = await api.get('/api/legal-forms/?status=pending&per_page=100');
+    return response.data.forms;
   },
+
+  // Get overdue forms
+  getOverdueForms: async (): Promise<LegalForm[]> => {
+    const response = await api.get('/api/legal-forms/overdue');
+    return response.data;
+  },
+
+  // Helper function to get form statistics
+  getFormStats: async () => {
+    const response = await api.get('/api/legal-forms/?per_page=1000');
+    const forms = response.data.forms;
+    
+    const stats = {
+      total: forms.length,
+      by_type: {} as Record<string, number>,
+      by_status: {} as Record<string, number>,
+      pending: 0,
+      overdue: 0
+    };
+
+    const now = new Date();
+
+    forms.forEach((form: LegalForm) => {
+      // Count by type
+      stats.by_type[form.form_type] = (stats.by_type[form.form_type] || 0) + 1;
+      
+      // Count by status
+      stats.by_status[form.status] = (stats.by_status[form.status] || 0) + 1;
+      
+      // Count pending
+      if (form.status === 'pending') {
+        stats.pending++;
+      }
+      
+      // Count overdue
+      if (form.deadline_date && new Date(form.deadline_date) < now && form.status !== 'completed') {
+        stats.overdue++;
+      }
+    });
+
+    return stats;
+  }
 }; 

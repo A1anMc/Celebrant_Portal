@@ -2,41 +2,32 @@
 # Supports both backend and frontend deployment
 
 # ===========================================
-# Backend Stage
+# Backend Build Stage
 # ===========================================
-FROM python:3.11-slim as backend
+FROM python:3.11-slim as backend-build
 
-WORKDIR /app/backend
+WORKDIR /app
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
     gcc \
     g++ \
+    libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy backend requirements and install Python dependencies
+# Copy backend requirements and install dependencies
 COPY celebrant-portal-v2/backend/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy backend application code
 COPY celebrant-portal-v2/backend/ .
 
-# Expose backend port
-EXPOSE 8000
-
-# Health check
-HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8000/health || exit 1
-
-# Start backend server
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
-
 # ===========================================
-# Frontend Stage
+# Frontend Build Stage
 # ===========================================
-FROM node:18-alpine as frontend
+FROM node:18-alpine as frontend-build
 
-WORKDIR /app/frontend
+WORKDIR /app
 
 # Copy package files
 COPY package*.json ./
@@ -45,24 +36,83 @@ COPY next.config.js ./
 COPY tailwind.config.js ./
 COPY postcss.config.js ./
 
-# Install dependencies
-RUN npm ci --only=production
+# Install dependencies (including devDependencies for build)
+RUN npm ci
 
 # Copy frontend source code
 COPY src/ ./src/
 COPY public/ ./public/
 
+# Set environment variable for production build
+ENV NODE_ENV=production
+ENV NEXT_PUBLIC_API_URL=http://localhost:8000
+
 # Build the application
 RUN npm run build
 
-# Expose frontend port
+# ===========================================
+# Backend Production Stage
+# ===========================================
+FROM python:3.11-slim as backend-production
+
+WORKDIR /app
+
+# Install runtime dependencies only
+RUN apt-get update && apt-get install -y \
+    libpq-dev \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy Python dependencies from build stage
+COPY --from=backend-build /usr/local/lib/python3.11/site-packages/ /usr/local/lib/python3.11/site-packages/
+COPY --from=backend-build /usr/local/bin/ /usr/local/bin/
+
+# Copy application code
+COPY --from=backend-build /app/ ./
+
+# Create non-root user for security
+RUN useradd --create-home --shell /bin/bash app && chown -R app:app /app
+USER app
+
+# Expose port
+EXPOSE 8000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8000/health || exit 1
+
+# Start command
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+
+# ===========================================
+# Frontend Production Stage
+# ===========================================
+FROM node:18-alpine as frontend-production
+
+WORKDIR /app
+
+# Install production dependencies only
+COPY package*.json ./
+RUN npm ci --only=production && npm cache clean --force
+
+# Copy built application from build stage
+COPY --from=frontend-build /app/.next ./.next
+COPY --from=frontend-build /app/public ./public
+COPY --from=frontend-build /app/next.config.js ./
+COPY --from=frontend-build /app/package.json ./
+
+# Create non-root user
+RUN addgroup -g 1001 -S nodejs && adduser -S nextjs -u 1001
+USER nextjs
+
+# Expose port
 EXPOSE 3000
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:3000 || exit 1
 
-# Start frontend server
+# Start command
 CMD ["npm", "start"]
 
 # ===========================================
@@ -107,8 +157,8 @@ RUN apk add --no-cache \
     nginx
 
 # Copy built applications
-COPY --from=backend /app/backend ./backend
-COPY --from=frontend /app/frontend ./frontend
+COPY --from=backend-production /app/backend ./backend
+COPY --from=frontend-production /app/frontend ./frontend
 
 # Copy nginx configuration
 COPY nginx.conf /etc/nginx/nginx.conf
