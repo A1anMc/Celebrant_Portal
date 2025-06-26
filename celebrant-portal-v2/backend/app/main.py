@@ -58,12 +58,12 @@ async def lifespan(app: FastAPI):
                 logger.info("Creating default admin user...")
                 admin_user = User(
                     email="admin@melbournecelebrant.com",
-                    first_name="Admin",
-                    last_name="User",
+                    name="Admin User",
                     phone="0400000000",
                     is_active=True,
-                    is_admin=True,
-                    hashed_password=get_password_hash("admin123")
+                    is_verified=True,
+                    role="admin",
+                    password_hash=get_password_hash("admin123")
                 )
                 db.add(admin_user)
                 db.commit()
