@@ -1,0 +1,78 @@
+MELBOURNE CELEBRANT PORTAL
+Your Professional Wedding Management Platform
+
+=====================================
+
+Dear [CELEBRANT_NAME],
+
+Welcome to Your New Digital Home!
+
+Congratulations on joining the Melbourne Celebrant Portal! We're thrilled to have you as part of our community of professional celebrants. Your account has been successfully created and you're ready to transform how you manage your wedding ceremonies.
+
+=====================================
+🔐 YOUR LOGIN CREDENTIALS
+=====================================
+
+Portal URL: https://your-frontend-url.vercel.app
+Email: [USER_EMAIL]
+Temporary Password: [TEMP_PASSWORD]
+
+⚠️ IMPORTANT: Please change your password immediately after your first login for security.
+
+=====================================
+🚀 WHAT YOU CAN DO WITH YOUR PORTAL
+=====================================
+
+👫 COUPLE MANAGEMENT
+Organize all your couples' information, preferences, and ceremony details in one secure location.
+
+📋 LEGAL FORMS
+Generate and manage all required legal documentation with our automated form system.
+
+📊 DASHBOARD ANALYTICS
+Track your bookings, revenue, and ceremony statistics with beautiful visual reports.
+
+🔒 SECURE & PRIVATE
+Bank-level security ensures all your sensitive client data remains completely protected.
+
+=====================================
+🎯 YOUR FIRST STEPS
+=====================================
+
+1. Log in using your credentials above
+2. Update your password and complete your profile
+3. Add your first couple's information
+4. Explore the dashboard and familiarize yourself with features
+5. Generate your first legal form
+
+=====================================
+💬 NEED HELP?
+=====================================
+
+Our support team is here to help you succeed:
+
+📧 Email: support@melbournecelebrant.com
+📞 Phone: 1300 CELEBRANT (1300 235 327)
+💬 Live Chat: Available in your portal
+📚 Help Center: Complete guides and tutorials
+
+=====================================
+🌐 QUICK LINKS
+=====================================
+
+Access Portal: https://your-frontend-url.vercel.app
+Documentation: https://your-frontend-url.vercel.app/docs
+Help Center: https://help.melbournecelebrant.com
+Community Forum: https://community.melbournecelebrant.com
+
+=====================================
+
+MELBOURNE CELEBRANT PORTAL
+Empowering celebrants with professional tools
+
+Follow us:
+Facebook | Instagram | LinkedIn
+
+This email was sent to [USER_EMAIL]. If you didn't request this account, please contact our support team.
+
+© 2025 Melbourne Celebrant Portal. All rights reserved. 
