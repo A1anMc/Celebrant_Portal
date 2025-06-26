@@ -1,141 +1,86 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel
 from typing import Optional, List
-from datetime import date, datetime
-from enum import Enum
+from datetime import datetime, date
+from decimal import Decimal
 
 
-class CoupleStatus(str, Enum):
-    inquiry = "inquiry"
-    consultation = "consultation"
-    booked = "booked"
-    confirmed = "confirmed"
-    completed = "completed"
-    cancelled = "cancelled"
-
-
-class PrimaryContact(str, Enum):
-    partner_1 = "partner_1"
-    partner_2 = "partner_2"
-
-
-class ContactMethod(str, Enum):
-    email = "email"
-    phone = "phone"
-    text = "text"
-
-
-class CoupleCreate(BaseModel):
-    # Partner 1
-    partner_1_first_name: str
-    partner_1_last_name: str
-    partner_1_email: Optional[EmailStr] = None
+class CoupleBase(BaseModel):
+    # Partner 1 details
+    partner_1_name: str
     partner_1_phone: Optional[str] = None
-    partner_1_date_of_birth: Optional[date] = None
+    partner_1_email: Optional[str] = None
     partner_1_address: Optional[str] = None
+    partner_1_occupation: Optional[str] = None
+    partner_1_birth_date: Optional[date] = None
+    partner_1_birth_place: Optional[str] = None
+    partner_1_parents: Optional[str] = None
     
-    # Partner 2
-    partner_2_first_name: str
-    partner_2_last_name: str
-    partner_2_email: Optional[EmailStr] = None
+    # Partner 2 details
+    partner_2_name: str
     partner_2_phone: Optional[str] = None
-    partner_2_date_of_birth: Optional[date] = None
+    partner_2_email: Optional[str] = None
     partner_2_address: Optional[str] = None
+    partner_2_occupation: Optional[str] = None
+    partner_2_birth_date: Optional[date] = None
+    partner_2_birth_place: Optional[str] = None
+    partner_2_parents: Optional[str] = None
     
-    # Relationship info
-    relationship_start_date: Optional[date] = None
-    previous_marriages: Optional[str] = None
+    # Ceremony details
+    ceremony_date: Optional[datetime] = None
+    ceremony_venue: Optional[str] = None
+    ceremony_address: Optional[str] = None
+    ceremony_type: str = "wedding"  # wedding, commitment, renewal
+    ceremony_style: Optional[str] = None  # traditional, modern, themed, etc.
     
     # Contact preferences
-    primary_contact: PrimaryContact = PrimaryContact.partner_1
-    preferred_contact_method: ContactMethod = ContactMethod.email
-    
-    # Status and notes
-    status: CoupleStatus = CoupleStatus.inquiry
+    preferred_contact_method: str = "email"  # email, phone, sms
     notes: Optional[str] = None
-    internal_notes: Optional[str] = None
-    
-    # Marketing
-    referral_source: Optional[str] = None
-    marketing_consent: Optional[str] = "not_specified"
+
+
+class CoupleCreate(CoupleBase):
+    pass
 
 
 class CoupleUpdate(BaseModel):
-    # Partner 1
-    partner_1_first_name: Optional[str] = None
-    partner_1_last_name: Optional[str] = None
-    partner_1_email: Optional[EmailStr] = None
+    # Partner 1 details
+    partner_1_name: Optional[str] = None
     partner_1_phone: Optional[str] = None
-    partner_1_date_of_birth: Optional[date] = None
-    partner_1_address: Optional[str] = None
-    
-    # Partner 2
-    partner_2_first_name: Optional[str] = None
-    partner_2_last_name: Optional[str] = None
-    partner_2_email: Optional[EmailStr] = None
-    partner_2_phone: Optional[str] = None
-    partner_2_date_of_birth: Optional[date] = None
-    partner_2_address: Optional[str] = None
-    
-    # Relationship info
-    relationship_start_date: Optional[date] = None
-    previous_marriages: Optional[str] = None
-    
-    # Contact preferences
-    primary_contact: Optional[PrimaryContact] = None
-    preferred_contact_method: Optional[ContactMethod] = None
-    
-    # Status and notes
-    status: Optional[CoupleStatus] = None
-    notes: Optional[str] = None
-    internal_notes: Optional[str] = None
-    
-    # Marketing
-    referral_source: Optional[str] = None
-    marketing_consent: Optional[str] = None
-
-
-class CoupleResponse(BaseModel):
-    id: int
-    
-    # Partner 1
-    partner_1_first_name: str
-    partner_1_last_name: str
     partner_1_email: Optional[str] = None
-    partner_1_phone: Optional[str] = None
-    partner_1_date_of_birth: Optional[date] = None
     partner_1_address: Optional[str] = None
+    partner_1_occupation: Optional[str] = None
+    partner_1_birth_date: Optional[date] = None
+    partner_1_birth_place: Optional[str] = None
+    partner_1_parents: Optional[str] = None
     
-    # Partner 2
-    partner_2_first_name: str
-    partner_2_last_name: str
-    partner_2_email: Optional[str] = None
+    # Partner 2 details
+    partner_2_name: Optional[str] = None
     partner_2_phone: Optional[str] = None
-    partner_2_date_of_birth: Optional[date] = None
+    partner_2_email: Optional[str] = None
     partner_2_address: Optional[str] = None
+    partner_2_occupation: Optional[str] = None
+    partner_2_birth_date: Optional[date] = None
+    partner_2_birth_place: Optional[str] = None
+    partner_2_parents: Optional[str] = None
     
-    # Relationship info
-    relationship_start_date: Optional[date] = None
-    previous_marriages: Optional[str] = None
+    # Ceremony details
+    ceremony_date: Optional[datetime] = None
+    ceremony_venue: Optional[str] = None
+    ceremony_address: Optional[str] = None
+    ceremony_type: Optional[str] = None
+    ceremony_style: Optional[str] = None
     
     # Contact preferences
-    primary_contact: str
-    preferred_contact_method: str
-    
-    # Status and notes
-    status: str
+    preferred_contact_method: Optional[str] = None
     notes: Optional[str] = None
-    internal_notes: Optional[str] = None
     
-    # Marketing
-    referral_source: Optional[str] = None
-    marketing_consent: str
-    
-    # Computed properties
-    full_names: str
-    primary_email: Optional[str] = None
-    primary_phone: Optional[str] = None
-    
-    # Timestamps
+    # Status
+    status: Optional[str] = None
+
+
+class CoupleResponse(CoupleBase):
+    id: int
+    user_id: int
+    status: str
     created_at: datetime
     updated_at: Optional[datetime] = None
     
@@ -148,11 +93,4 @@ class CoupleListResponse(BaseModel):
     total: int
     page: int
     per_page: int
-    pages: int
-
-
-class CoupleSearchParams(BaseModel):
-    search: Optional[str] = None
-    status: Optional[CoupleStatus] = None
-    page: int = 1
-    per_page: int = 20 
+    pages: int 
