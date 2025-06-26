@@ -1,26 +1,21 @@
 from datetime import datetime, timedelta
 from typing import Optional, Union
 import jwt
-from argon2 import PasswordHasher
-from argon2.exceptions import VerifyMismatchError
+from passlib.hash import bcrypt
 from app.config import settings
-
-# Password hashing with argon2
-ph = PasswordHasher()
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Verify a plain password against its hash."""
     try:
-        ph.verify(hashed_password, plain_password)
-        return True
-    except VerifyMismatchError:
+        return bcrypt.verify(plain_password, hashed_password)
+    except Exception:
         return False
 
 
 def get_password_hash(password: str) -> str:
     """Hash a password."""
-    return ph.hash(password)
+    return bcrypt.hash(password)
 
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
@@ -64,4 +59,4 @@ def extract_user_id_from_token(token: str) -> Optional[int]:
                 return int(user_id)
             except (ValueError, TypeError):
                 return None
-    return None 
+    return None
