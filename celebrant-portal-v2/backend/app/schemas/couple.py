@@ -2,6 +2,25 @@ from pydantic import BaseModel
 from typing import Optional, List
 from datetime import datetime, date
 from decimal import Decimal
+from enum import Enum
+
+
+class CoupleStatus(str, Enum):
+    """Enum for couple status values."""
+    INQUIRY = "inquiry"
+    CONSULTATION = "consultation"
+    BOOKED = "booked"
+    CONFIRMED = "confirmed"
+    COMPLETED = "completed"
+    CANCELLED = "cancelled"
+
+
+class CoupleSearchParams(BaseModel):
+    """Search parameters for couples."""
+    search: Optional[str] = None
+    status: Optional[CoupleStatus] = None
+    page: int = 1
+    per_page: int = 20
 
 
 class CoupleBase(BaseModel):
