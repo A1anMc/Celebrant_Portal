@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from typing import Optional
 from datetime import datetime
 
@@ -27,6 +27,8 @@ class TokenData(BaseModel):
 
 
 class UserResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    
     id: int
     email: str
     name: str
@@ -38,9 +40,6 @@ class UserResponse(BaseModel):
     currency: str
     created_at: datetime
     last_login: Optional[datetime] = None
-
-    class Config:
-        from_attributes = True
 
 
 class UserUpdate(BaseModel):

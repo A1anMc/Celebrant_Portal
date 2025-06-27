@@ -1,8 +1,9 @@
 import os
 from typing import List
+from pydantic_settings import BaseSettings
 
 
-class Settings:
+class Settings(BaseSettings):
     # App settings
     app_name: str = "Melbourne Celebrant Portal"
     app_version: str = "2.0.0"
@@ -10,29 +11,19 @@ class Settings:
     debug: bool = os.getenv("DEBUG", "false").lower() == "true"
     
     # Security
-    secret_key: str = os.getenv("SECRET_KEY", "your-secret-key-change-this-in-production")
-    access_token_expire_minutes: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "60"))
-    refresh_token_expire_days: int = int(os.getenv("REFRESH_TOKEN_EXPIRE_DAYS", "30"))
+    secret_key: str = os.getenv("SECRET_KEY", "your-secret-key-here")
+    access_token_expire_minutes: int = 30
+    refresh_token_expire_days: int = 7
     
     # Database
-    database_url: str = os.getenv(
-        "DATABASE_URL", 
-        "sqlite:///./celebrant_portal.db"
-    )
+    database_url: str = os.getenv("DATABASE_URL", "sqlite:///./celebrant_portal.db")
     
     # CORS
-    cors_origins_str: str = os.getenv(
-        "ALLOWED_ORIGINS", 
-        "http://localhost:3000,http://127.0.0.1:3000"
-    )
-    cors_origins: List[str] = [
-        origin.strip() 
-        for origin in cors_origins_str.split(",") 
-        if origin.strip()
-    ]
+    cors_origins_str: str = os.getenv("CORS_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000,http://localhost:3001,http://127.0.0.1:3001,http://localhost:3002,http://localhost:3003,http://localhost:3004")
+    cors_origins: List[str] = [origin.strip() for origin in cors_origins_str.split(",")]
     
     # Email settings (optional)
-    smtp_host: str = os.getenv("SMTP_HOST", "")
+    smtp_server: str = os.getenv("SMTP_SERVER", "")
     smtp_port: int = int(os.getenv("SMTP_PORT", "587"))
     smtp_username: str = os.getenv("SMTP_USERNAME", "")
     smtp_password: str = os.getenv("SMTP_PASSWORD", "")
@@ -59,7 +50,13 @@ class Settings:
     # Redis (optional)
     redis_url: str = os.getenv("REDIS_URL", "")
     
-    def __init__(self):
+    # JWT
+    algorithm: str = "HS256"
+    
+    model_config = {"case_sensitive": False}
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
         # Handle database URL format conversion for Render
         if self.database_url.startswith("postgres://"):
             # Convert postgres:// to postgresql:// for SQLAlchemy compatibility
@@ -71,7 +68,7 @@ class Settings:
         
         # Validate required settings in production
         if self.environment.lower() == "production":
-            if self.secret_key == "your-secret-key-change-this-in-production":
+            if self.secret_key == "your-secret-key-here":
                 raise ValueError("SECRET_KEY must be changed in production")
 
     @property
@@ -88,7 +85,7 @@ settings = Settings()
 
 # Validate critical settings
 if settings.is_production:
-    if settings.secret_key == "your-secret-key-change-this-in-production":
+    if settings.secret_key == "your-secret-key-here":
         raise ValueError("SECRET_KEY must be changed in production")
     
     if settings.debug:

@@ -76,7 +76,7 @@ export default function LoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                placeholder="admin@celebrant.com"
+                placeholder="admin@melbournecelebrant.com"
                 autoComplete="email"
               />
 
@@ -102,7 +102,7 @@ export default function LoginPage() {
 
             <div className="mt-6 text-center">
               <p className="text-sm text-gray-500">
-                Demo credentials: admin@celebrant.com / admin123
+                Demo credentials: admin@melbournecelebrant.com / admin123
               </p>
             </div>
           </CardContent>

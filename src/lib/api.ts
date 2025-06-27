@@ -1,12 +1,17 @@
-import axios, { AxiosInstance, AxiosError } from 'axios';
+import axios, { AxiosInstance, AxiosError, InternalAxiosRequestConfig } from 'axios';
 
 // API Configuration
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
+// Extend the axios config type to include _retry
+interface AxiosRequestConfigWithRetry extends InternalAxiosRequestConfig {
+  _retry?: boolean;
+}
+
 // Create axios instance
 export const api: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 10000,
+  timeout: 30000,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -66,7 +71,7 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
-    const originalRequest = error.config;
+    const originalRequest = error.config as AxiosRequestConfigWithRetry;
     
     if (error.response?.status === 401 && originalRequest && !originalRequest._retry) {
       originalRequest._retry = true;
@@ -83,7 +88,9 @@ api.interceptors.response.use(
           tokenManager.setRefreshToken(new_refresh_token);
           
           // Retry original request with new token
-          originalRequest.headers.Authorization = `Bearer ${access_token}`;
+          if (originalRequest.headers) {
+            originalRequest.headers.Authorization = `Bearer ${access_token}`;
+          }
           return api(originalRequest);
         } catch (refreshError) {
           // Refresh failed, redirect to login

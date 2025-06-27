@@ -10,10 +10,13 @@ from app.auth.dependencies import get_current_user, get_current_active_user, get
 from app.config import settings
 import logging
 import jwt
-from jwt.exceptions import JWTError
+from jwt import InvalidTokenError
 
 logger = logging.getLogger(__name__)
-router = APIRouter(prefix="/api/auth", tags=["Authentication"])
+router = APIRouter(tags=["Authentication"])
+
+# Algorithm constant
+ALGORITHM = "HS256"
 
 
 @router.post("/login", response_model=Token)
@@ -52,8 +55,7 @@ async def login(user_credentials: UserLogin, db: Session = Depends(get_db)):
             expires_delta=timedelta(minutes=settings.access_token_expire_minutes)
         )
         refresh_token = create_refresh_token(
-            data={"sub": str(user.id)},
-            expires_delta=timedelta(days=settings.refresh_token_expire_days)
+            data={"sub": str(user.id)}
         )
         
         logger.info(f"User {user.email} logged in successfully")
@@ -217,8 +219,7 @@ async def refresh_token(refresh_token: str, db: Session = Depends(get_db)):
             expires_delta=timedelta(minutes=settings.access_token_expire_minutes)
         )
         new_refresh_token = create_refresh_token(
-            data={"sub": str(user.id)},
-            expires_delta=timedelta(days=settings.refresh_token_expire_days)
+            data={"sub": str(user.id)}
         )
         
         return Token(
@@ -229,6 +230,11 @@ async def refresh_token(refresh_token: str, db: Session = Depends(get_db)):
     
     except HTTPException:
         raise
+    except InvalidTokenError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid refresh token"
+        )
     except Exception as e:
         logger.error(f"Token refresh error: {e}")
         raise HTTPException(

@@ -168,3 +168,31 @@ EXPOSE 80 443
 
 # Start services
 CMD ["sh", "-c", "nginx && cd backend && uvicorn app.main:app --host 0.0.0.0 --port 8000 & cd frontend && npm start"]
+
+# Frontend Dockerfile (for src/ directory)
+FROM node:18-alpine
+
+WORKDIR /app
+
+# Install dependencies
+COPY package*.json ./
+RUN npm ci
+
+# Copy application code and config files
+COPY . .
+
+# Build the Next.js app
+RUN npm run build
+
+# Create non-root user
+RUN addgroup -g 1001 -S nodejs && adduser -S nextjs -u 1001
+USER nextjs
+
+EXPOSE 3000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
+    CMD wget --no-verbose --tries=1 --spider http://localhost:3000 || exit 1
+
+# Start the application
+CMD ["npm", "start"]

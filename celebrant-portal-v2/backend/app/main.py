@@ -5,15 +5,21 @@ from contextlib import asynccontextmanager
 import logging
 import sys
 import traceback
+import os
+from pathlib import Path
 
 from app.config import settings
 from app.auth.router import router as auth_router
 from app.api import dashboard, couples, legal_forms
-from app.database import create_tables, engine, get_db
+from app.database import create_tables, engine, get_db, Base
 from app.models.user import User
 from app.auth.utils import get_password_hash
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import text
+
+# Add the backend directory to Python path
+backend_dir = Path(__file__).parent.parent
+sys.path.insert(0, str(backend_dir))
 
 # Configure logging
 logging.basicConfig(
@@ -99,7 +105,7 @@ app = FastAPI(
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.cors_origins,  # Use settings instead of ["*"]
+    allow_origins=settings.cors_origins,  # FIX: Use the setting
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -147,5 +153,12 @@ async def health_check():
 
 
 if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000) 
+    port = int(os.getenv("PORT", 8000))
+    logger.info(f"Starting server on port {port}")
+    uvicorn.run(
+        "main:app",
+        host="0.0.0.0",
+        port=port,
+        reload=settings.debug,
+        log_level="info"
+    ) 

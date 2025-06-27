@@ -5,7 +5,7 @@ import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { dashboardService } from '@/services/dashboard';
-import { DashboardData } from '@/types';
+import { DashboardMetrics, UpcomingWeddingSummary } from '@/types';
 import { formatCurrency, formatDate, getDaysUntil, getStatusColor } from '@/lib/utils';
 import { 
   Users, 
@@ -19,15 +19,21 @@ import {
 import Link from 'next/link';
 
 export default function DashboardPage() {
-  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
+  const [dashboardMetrics, setDashboardMetrics] = useState<DashboardMetrics | null>(null);
+  const [upcomingWeddings, setUpcomingWeddings] = useState<UpcomingWeddingSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   useEffect(() => {
     const loadDashboardData = async () => {
       try {
-        const data = await dashboardService.getDashboardData();
-        setDashboardData(data);
+        // FIX: Use correct service methods
+        const [metrics, weddings] = await Promise.all([
+          dashboardService.getDashboardMetrics(),
+          dashboardService.getUpcomingWeddings(30)
+        ]);
+        setDashboardMetrics(metrics);
+        setUpcomingWeddings(weddings);
       } catch (err: any) {
         setError(err.message || 'Failed to load dashboard data');
       } finally {
@@ -69,8 +75,6 @@ export default function DashboardPage() {
     );
   }
 
-  const stats = dashboardData?.stats;
-
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -98,7 +102,7 @@ export default function DashboardPage() {
                 </div>
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-600">Total Couples</p>
-                  <p className="text-2xl font-bold text-gray-900">{stats?.total_couples || 0}</p>
+                  <p className="text-2xl font-bold text-gray-900">{dashboardMetrics?.couples.total || 0}</p>
                 </div>
               </div>
             </CardContent>
@@ -112,7 +116,7 @@ export default function DashboardPage() {
                 </div>
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-600">Upcoming Ceremonies</p>
-                  <p className="text-2xl font-bold text-gray-900">{stats?.upcoming_ceremonies || 0}</p>
+                  <p className="text-2xl font-bold text-gray-900">{dashboardMetrics?.ceremonies.upcoming_30_days || 0}</p>
                 </div>
               </div>
             </CardContent>
@@ -125,8 +129,8 @@ export default function DashboardPage() {
                   <FileText className="h-6 w-6 text-yellow-600" />
                 </div>
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Pending NOIM Forms</p>
-                  <p className="text-2xl font-bold text-gray-900">{stats?.pending_noim_forms || 0}</p>
+                  <p className="text-sm font-medium text-gray-600">Legal Forms Urgent</p>
+                  <p className="text-2xl font-bold text-gray-900">{dashboardMetrics?.legal_forms.urgent_attention || 0}</p>
                 </div>
               </div>
             </CardContent>
@@ -141,7 +145,7 @@ export default function DashboardPage() {
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-600">Monthly Revenue</p>
                   <p className="text-2xl font-bold text-gray-900">
-                    {formatCurrency(stats?.monthly_revenue || 0)}
+                    {formatCurrency(dashboardMetrics?.revenue.monthly || 0)}
                   </p>
                 </div>
               </div>
@@ -158,25 +162,25 @@ export default function DashboardPage() {
               <CardDescription>Your next ceremonies</CardDescription>
             </CardHeader>
             <CardContent>
-              {dashboardData?.upcoming_weddings?.length ? (
+              {upcomingWeddings?.ceremonies?.length ? (
                 <div className="space-y-4">
-                  {dashboardData.upcoming_weddings.slice(0, 5).map((wedding) => (
+                  {upcomingWeddings.ceremonies.slice(0, 5).map((wedding) => (
                     <div key={wedding.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                       <div>
-                        <p className="font-medium text-gray-900">{wedding.couple_names}</p>
+                        <p className="font-medium text-gray-900">{wedding.couple.names}</p>
                         <p className="text-sm text-gray-600">
-                          {formatDate(wedding.ceremony_date)} {wedding.ceremony_time && `at ${wedding.ceremony_time}`}
+                          {formatDate(wedding.ceremony.date)} {wedding.ceremony.time && `at ${wedding.ceremony.time}`}
                         </p>
-                        {wedding.venue && (
-                          <p className="text-sm text-gray-500">{wedding.venue}</p>
+                        {wedding.ceremony.venue && (
+                          <p className="text-sm text-gray-500">{wedding.ceremony.venue}</p>
                         )}
                       </div>
                       <div className="text-right">
-                        <div className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(wedding.status)}`}>
-                          {wedding.status}
+                        <div className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(wedding.ceremony.status)}`}>
+                          {wedding.ceremony.status}
                         </div>
                         <p className="text-sm text-gray-500 mt-1">
-                          {wedding.days_until > 0 ? `${wedding.days_until} days` : 'Today'}
+                          {wedding.ceremony.days_until > 0 ? `${wedding.ceremony.days_until} days` : 'Today'}
                         </p>
                       </div>
                     </div>
@@ -202,103 +206,66 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
 
-          {/* Recent Enquiries */}
+          {/* Revenue Summary */}
           <Card>
             <CardHeader>
-              <CardTitle>Recent Enquiries</CardTitle>
-              <CardDescription>Latest couple enquiries</CardDescription>
+              <CardTitle>Revenue Summary</CardTitle>
+              <CardDescription>Financial overview</CardDescription>
             </CardHeader>
             <CardContent>
-              {dashboardData?.recent_enquiries?.length ? (
-                <div className="space-y-4">
-                  {dashboardData.recent_enquiries.slice(0, 5).map((couple) => (
-                    <div key={couple.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                      <div>
-                        <p className="font-medium text-gray-900">
-                          {couple.partner1.first_name} {couple.partner1.last_name} & {couple.partner2.first_name} {couple.partner2.last_name}
-                        </p>
-                        <p className="text-sm text-gray-600">
-                          {couple.ceremony_type} • {couple.ceremony_date ? formatDate(couple.ceremony_date) : 'Date TBD'}
-                        </p>
-                      </div>
-                      <div className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(couple.status)}`}>
-                        {couple.status}
-                      </div>
-                    </div>
-                  ))}
-                  <Link href="/couples?status=enquiry">
-                    <Button variant="outline" size="sm" className="w-full">
-                      <Eye className="mr-2 h-4 w-4" />
-                      View All Enquiries
-                    </Button>
-                  </Link>
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">Total Revenue</span>
+                  <span className="font-semibold">{formatCurrency(dashboardMetrics?.revenue.total || 0)}</span>
                 </div>
-              ) : (
-                <div className="text-center py-6">
-                  <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-500">No recent enquiries</p>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">This Month</span>
+                  <span className="font-semibold">{formatCurrency(dashboardMetrics?.revenue.monthly || 0)}</span>
                 </div>
-              )}
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">Outstanding</span>
+                  <span className="font-semibold text-yellow-600">
+                    {formatCurrency(dashboardMetrics?.revenue.outstanding_amount || 0)}
+                    {dashboardMetrics?.revenue.outstanding_count ? ` (${dashboardMetrics.revenue.outstanding_count})` : ''}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">Overdue</span>
+                  <span className="font-semibold text-red-600">
+                    {formatCurrency(dashboardMetrics?.revenue.overdue_amount || 0)}
+                    {dashboardMetrics?.revenue.overdue_count ? ` (${dashboardMetrics.revenue.overdue_count})` : ''}
+                  </span>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Pending Tasks */}
-        {(dashboardData?.pending_tasks?.noim_forms?.length || dashboardData?.pending_tasks?.overdue_invoices?.length) && (
+        {/* Summary Stats */}
+        {upcomingWeddings?.summary && (
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center">
-                <AlertTriangle className="mr-2 h-5 w-5 text-yellow-600" />
-                Pending Tasks
-              </CardTitle>
-              <CardDescription>Items requiring your attention</CardDescription>
+              <CardTitle>Wedding Summary</CardTitle>
+              <CardDescription>Ceremony schedule overview</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {dashboardData.pending_tasks.noim_forms?.length > 0 && (
-                  <div>
-                    <h4 className="font-medium text-gray-900 mb-2">NOIM Forms Due</h4>
-                    <div className="space-y-2">
-                      {dashboardData.pending_tasks.noim_forms.slice(0, 3).map((form) => (
-                        <div key={form.id} className="flex items-center justify-between p-2 bg-yellow-50 rounded">
-                          <span className="text-sm">{form.form_name}</span>
-                          <span className="text-xs text-yellow-700">
-                            {form.expiry_date && getDaysUntil(form.expiry_date) > 0 
-                              ? `${getDaysUntil(form.expiry_date)} days left`
-                              : 'Overdue'
-                            }
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                    <Link href="/legal-forms?status=pending">
-                      <Button variant="outline" size="sm" className="mt-2">
-                        View All NOIM Forms
-                      </Button>
-                    </Link>
-                  </div>
-                )}
-
-                {dashboardData.pending_tasks.overdue_invoices?.length > 0 && (
-                  <div>
-                    <h4 className="font-medium text-gray-900 mb-2">Overdue Invoices</h4>
-                    <div className="space-y-2">
-                      {dashboardData.pending_tasks.overdue_invoices.slice(0, 3).map((invoice) => (
-                        <div key={invoice.id} className="flex items-center justify-between p-2 bg-red-50 rounded">
-                          <span className="text-sm">{invoice.invoice_number}</span>
-                          <span className="text-xs text-red-700">
-                            {formatCurrency(invoice.total_amount)}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                    <Link href="/invoices?status=overdue">
-                      <Button variant="outline" size="sm" className="mt-2">
-                        View All Overdue Invoices
-                      </Button>
-                    </Link>
-                  </div>
-                )}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="text-center">
+                  <p className="text-2xl font-bold text-gray-900">{upcomingWeddings.summary.this_week}</p>
+                  <p className="text-sm text-gray-600">This Week</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-2xl font-bold text-gray-900">{upcomingWeddings.summary.next_week}</p>
+                  <p className="text-sm text-gray-600">Next Week</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-2xl font-bold text-gray-900">{upcomingWeddings.summary.this_month}</p>
+                  <p className="text-sm text-gray-600">This Month</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-2xl font-bold text-gray-900">{formatCurrency(upcomingWeddings.summary.total_revenue)}</p>
+                  <p className="text-sm text-gray-600">Expected Revenue</p>
+                </div>
               </div>
             </CardContent>
           </Card>

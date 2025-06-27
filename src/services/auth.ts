@@ -1,97 +1,66 @@
-import { api } from '@/lib/api';
-
-export interface LoginRequest {
-  email: string;
-  password: string;
-}
-
-export interface LoginResponse {
-  access_token: string;
-  refresh_token: string;
-  token_type: string;
-  user: {
-    id: number;
-    email: string;
-    name: string;
-    role: string;
-    is_active: boolean;
-    is_verified: boolean;
-  };
-}
-
-export interface RegisterRequest {
-  email: string;
-  password: string;
-  name: string;
-  phone?: string;
-  business_name?: string;
-}
-
-export interface UserProfile {
-  id: number;
-  email: string;
-  name: string;
-  phone?: string;
-  business_name?: string;
-  role: string;
-  is_active: boolean;
-  is_verified: boolean;
-  created_at: string;
-  updated_at?: string;
-}
-
-export interface ChangePasswordRequest {
-  current_password: string;
-  new_password: string;
-}
+import { api, apiRequest, tokenManager } from '@/lib/api';
+import { LoginRequest, LoginResponse, User } from '@/types';
 
 export const authService = {
+  // Login user
   login: async (credentials: LoginRequest): Promise<LoginResponse> => {
+    // FIX: The backend /login endpoint expects a JSON payload, not form data.
     const response = await api.post('/api/auth/login', {
       email: credentials.email,
       password: credentials.password
     });
+
+    const tokenData = response.data;
     
-    if (response.data.access_token) {
-      localStorage.setItem('access_token', response.data.access_token);
-      localStorage.setItem('refresh_token', response.data.refresh_token);
+    // Store tokens
+    tokenManager.setToken(tokenData.access_token);
+    if (tokenData.refresh_token) {
+      tokenManager.setRefreshToken(tokenData.refresh_token);
     }
     
-    return response.data;
+    // FIX: The /login route only returns tokens. We must call /me to get user info.
+    const user = await authService.getCurrentUser();
+
+    // Combine the token response with the user data for the frontend state.
+    return { ...tokenData, user };
   },
 
-  register: async (userData: RegisterRequest): Promise<LoginResponse> => {
-    const response = await api.post('/api/auth/register', userData);
-    return response.data;
-  },
-
+  // Logout user
   logout: async (): Promise<void> => {
     try {
+      // No change needed here, but good to keep.
       await api.post('/api/auth/logout');
     } catch (error) {
-      console.warn('Logout API call failed:', error);
+      console.warn('Logout API call failed, clearing tokens regardless:', error);
     } finally {
-      localStorage.removeItem('access_token');
-      localStorage.removeItem('refresh_token');
+      tokenManager.clearTokens();
     }
   },
 
-  getCurrentUser: async (): Promise<UserProfile> => {
-    const response = await api.get('/api/auth/me');
-    return response.data;
+  // Get current user
+  getCurrentUser: async (): Promise<User> => {
+    return apiRequest<User>(() => api.get('/api/auth/me'));
   },
 
-  updateProfile: async (profileData: Partial<UserProfile>): Promise<UserProfile> => {
-    const response = await api.put('/api/auth/me', profileData);
-    return response.data;
+  // Register new user (admin only)
+  register: async (userData: any): Promise<User> => {
+    return apiRequest<User>(() => api.post('/api/auth/register', userData));
   },
 
-  changePassword: async (passwordData: ChangePasswordRequest): Promise<void> => {
-    await api.post('/api/auth/change-password', passwordData);
+  // Update user profile
+  updateProfile: async (userData: Partial<User>): Promise<User> => {
+    // FIX: The backend endpoint is /me, not /profile.
+    return apiRequest<User>(() => api.put('/api/auth/me', userData));
   },
 
+  // Change password
+  changePassword: async (passwordData: { current_password: string; new_password: string }): Promise<void> => {
+    return apiRequest<void>(() => api.post('/api/auth/change-password', passwordData));
+  },
+
+  // Refresh token
   refreshToken: async (): Promise<{ access_token: string; token_type: string }> => {
-    const refreshToken = localStorage.getItem('refresh_token');
+    const refreshToken = tokenManager.getRefreshToken();
     if (!refreshToken) {
       throw new Error('No refresh token available');
     }
@@ -100,27 +69,34 @@ export const authService = {
       refresh_token: refreshToken
     });
 
+    // Update stored access token
     if (response.data.access_token) {
-      localStorage.setItem('access_token', response.data.access_token);
+      tokenManager.setToken(response.data.access_token);
     }
 
     return response.data;
   },
 
-  getStoredToken: (): string | null => {
-    return localStorage.getItem('access_token');
-  },
-
+  // Check if user is authenticated
   isAuthenticated: (): boolean => {
-    const token = localStorage.getItem('access_token');
+    const token = tokenManager.getToken();
     if (!token) return false;
 
     try {
+      // Basic JWT expiration check
       const payload = JSON.parse(atob(token.split('.')[1]));
       const currentTime = Date.now() / 1000;
       return payload.exp > currentTime;
     } catch {
       return false;
     }
+  },
+
+  // Get stored token
+  getStoredToken: (): string | null => {
+    return tokenManager.getToken();
   }
-}; 
+};
+
+// Export token manager for use in API interceptors
+export { tokenManager }; 

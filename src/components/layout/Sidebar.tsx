@@ -90,7 +90,7 @@ export default function Sidebar() {
           </div>
           <div className="ml-3 flex-1">
             <p className="text-sm font-medium text-gray-900">
-              {user?.full_name || 'User'}
+              {user?.name || 'User'}
             </p>
             <p className="text-xs text-gray-500">
               {user?.email}
