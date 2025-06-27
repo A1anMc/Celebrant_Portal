@@ -1,3 +1,4 @@
+from app.database import Base
 from .user import User
 from .couple import Couple
 from .ceremony import Ceremony
@@ -7,6 +8,7 @@ from .template import CeremonyTemplate
 from .travel_log import TravelLog
 
 __all__ = [
+    "Base",
     "User",
     "Couple", 
     "Ceremony",
