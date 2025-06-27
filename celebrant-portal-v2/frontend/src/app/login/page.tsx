@@ -18,6 +18,9 @@ export default function LoginPage() {
   const router = useRouter();
 
   useEffect(() => {
+    // Clear any existing error when component mounts
+    setError('');
+    
     if (isAuthenticated) {
       router.push('/dashboard');
     }
@@ -32,7 +35,10 @@ export default function LoginPage() {
       await login({ email, password });
       router.push('/dashboard');
     } catch (err: any) {
-      setError(err.message || 'Login failed. Please check your credentials.');
+      console.error('Login error:', err);
+      setError(err.message || 'Login failed. Please check your credentials and try again.');
+      // Clear password on error
+      setPassword('');
     } finally {
       setLoading(false);
     }

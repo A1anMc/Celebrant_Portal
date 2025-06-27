@@ -9,14 +9,22 @@ pydantic-settings==2.6.1
 sqlalchemy==2.0.36
 psycopg2-binary==2.9.10
 alembic==1.13.1
+aiosqlite==0.19.0
 
 # Authentication & Security
 PyJWT==2.10.1
 passlib[bcrypt]==1.7.4
+python-jose[cryptography]==3.3.0
+
+# CORS
+starlette==0.36.3
+starlette-csrf==2.1.0
 
 # Utilities
 python-dateutil==2.8.2
 pytz==2023.4
+requests==2.31.0
+aiofiles==23.2.1
 
 # Production
 gunicorn==23.0.0

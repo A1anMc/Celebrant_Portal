@@ -4,25 +4,38 @@ import { LoginRequest, LoginResponse, User } from '@/types';
 export const authService = {
   // Login user
   login: async (credentials: LoginRequest): Promise<LoginResponse> => {
-    // FIX: The backend /login endpoint expects a JSON payload, not form data.
-    const response = await api.post('/api/auth/login', {
-      email: credentials.email,
-      password: credentials.password
-    });
+    try {
+      // First, try to login and get tokens
+      const response = await api.post('/api/auth/login', {
+        email: credentials.email,
+        password: credentials.password
+      });
 
-    const tokenData = response.data;
-    
-    // Store tokens
-    tokenManager.setToken(tokenData.access_token);
-    if (tokenData.refresh_token) {
-      tokenManager.setRefreshToken(tokenData.refresh_token);
+      const tokenData = response.data;
+      
+      // Store tokens
+      tokenManager.setToken(tokenData.access_token);
+      if (tokenData.refresh_token) {
+        tokenManager.setRefreshToken(tokenData.refresh_token);
+      }
+
+      // Get user info
+      try {
+        const user = await authService.getCurrentUser();
+        return { ...tokenData, user };
+      } catch (error) {
+        // If getting user info fails, clear tokens and throw error
+        tokenManager.clearTokens();
+        throw error;
+      }
+    } catch (error: any) {
+      // Clear any existing tokens on login failure
+      tokenManager.clearTokens();
+      throw {
+        message: error.response?.data?.detail || 'Login failed. Please check your credentials.',
+        status: error.response?.status || 500
+      };
     }
-    
-    // FIX: The /login route only returns tokens. We must call /me to get user info.
-    const user = await authService.getCurrentUser();
-
-    // Combine the token response with the user data for the frontend state.
-    return { ...tokenData, user };
   },
 
   // Logout user

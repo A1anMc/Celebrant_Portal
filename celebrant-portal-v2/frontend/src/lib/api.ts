@@ -14,7 +14,9 @@ export const api: AxiosInstance = axios.create({
   timeout: 30000,
   headers: {
     'Content-Type': 'application/json',
+    'Accept': 'application/json'
   },
+  withCredentials: true // Enable credentials for CORS
 });
 
 // Token management

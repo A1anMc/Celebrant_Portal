@@ -1,34 +1,37 @@
 services:
-  - type: web
-    name: melbourne-celebrant-api
+  - name: celebrant-portal-backend
+    type: web
     env: python
-    rootDir: celebrant-portal-v2
-    buildCommand: |
-      echo "📦 Installing Python packages..."
-      python --version
-      pip install --upgrade pip
-      pip install -r requirements.txt
-    startCommand: |
-      cd backend
-      uvicorn app.main:app --host 0.0.0.0 --port $PORT
-    healthCheckPath: /health
+    buildCommand: pip install -r requirements.txt
+    startCommand: cd backend && PYTHONPATH=/opt/render/project/src/backend uvicorn app.main:app --host 0.0.0.0 --port $PORT
     envVars:
+      - key: PYTHON_VERSION
+        value: 3.13.0
+      - key: DATABASE_URL
+        value: sqlite:///./celebrant_portal.db
       - key: ENVIRONMENT
         value: production
       - key: DEBUG
         value: false
       - key: SECRET_KEY
         generateValue: true
-      - key: DATABASE_URL
-        fromDatabase:
-          name: melbourne-celebrant-db
-          property: connectionString
-      - key: ACCESS_TOKEN_EXPIRE_MINUTES
-        value: 60
-      - key: REFRESH_TOKEN_EXPIRE_DAYS
-        value: 30
+      - key: CORS_ORIGINS
+        fromService:
+          name: celebrant-portal-frontend
+          type: web
+          property: url
+    healthCheckPath: /health
 
-databases:
-  - name: melbourne-celebrant-db
-    databaseName: celebrant_portal
-    user: celebrant_user 
+  - name: celebrant-portal-frontend
+    type: web
+    env: node
+    buildCommand: cd frontend && npm install && npm run build
+    startCommand: cd frontend && npm start
+    envVars:
+      - key: NODE_VERSION
+        value: 18.0.0
+      - key: NEXT_PUBLIC_API_URL
+        fromService:
+          name: celebrant-portal-backend
+          type: web
+          property: url 
