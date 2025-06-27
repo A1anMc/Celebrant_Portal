@@ -2,8 +2,9 @@ services:
   - type: web
     name: melbourne-celebrant-api
     env: python
+    rootDir: celebrant-portal-v2
     buildCommand: |
-      echo "🔧 Installing dependencies..."
+      echo "🔧 Installing dependencies in nested backend structure..."
       pip install --upgrade pip
       
       echo "📦 Installing from root requirements.txt..."
@@ -12,8 +13,8 @@ services:
       fi
       
       echo "📦 Installing from backend requirements.txt..."
-      if [ -f "celebrant-portal-v2/backend/requirements.txt" ]; then
-        pip install -r celebrant-portal-v2/backend/requirements.txt
+      if [ -f "backend/requirements.txt" ]; then
+        pip install -r backend/requirements.txt
       fi
       
       echo "🔧 Installing passlib specifically..."
@@ -24,10 +25,10 @@ services:
       
       echo "✅ Build complete!"
     startCommand: |
-      echo "🚀 Starting application..."
-      cd celebrant-portal-v2/backend
+      echo "🚀 Starting application from nested backend..."
+      cd backend
       echo "📍 Current directory: $(pwd)"
-      echo "🔧 Installing passlib in current directory..."
+      echo "🔧 Installing passlib in backend directory..."
       pip install 'passlib[bcrypt]==1.7.4'
       echo "🧪 Testing imports..."
       python test_imports.py
