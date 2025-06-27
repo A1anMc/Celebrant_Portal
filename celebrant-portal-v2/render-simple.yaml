@@ -1,0 +1,44 @@
+services:
+  - type: web
+    name: melbourne-celebrant-api
+    env: python
+    buildCommand: |
+      echo "🔧 Simple build process..."
+      pip install --upgrade pip
+      pip install 'passlib[bcrypt]==1.7.4'
+      pip install fastapi==0.115.6
+      pip install uvicorn[standard]==0.32.1
+      pip install pydantic==2.10.3
+      pip install pydantic-settings==2.6.1
+      pip install sqlalchemy==2.0.36
+      pip install psycopg2-binary==2.9.10
+      pip install PyJWT==2.10.1
+      pip install argon2-cffi==23.1.0
+      pip install python-multipart==0.0.12
+      pip install python-dateutil==2.8.2
+      pip install pytz==2023.4
+      pip install gunicorn==23.0.0
+      echo "✅ All packages installed"
+      python -c "import passlib; print('✅ passlib:', passlib.__version__)"
+    startCommand: python simple_start.py
+    healthCheckPath: /health
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      - key: DEBUG
+        value: false
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: melbourne-celebrant-db
+          property: connectionString
+      - key: ACCESS_TOKEN_EXPIRE_MINUTES
+        value: 60
+      - key: REFRESH_TOKEN_EXPIRE_DAYS
+        value: 30
+
+databases:
+  - name: melbourne-celebrant-db
+    databaseName: celebrant_portal
+    user: celebrant_user 
