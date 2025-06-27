@@ -4,36 +4,13 @@ services:
     env: python
     rootDir: celebrant-portal-v2
     buildCommand: |
-      echo "🔧 Installing dependencies in nested backend structure..."
+      echo "📦 Installing Python packages..."
+      python --version
       pip install --upgrade pip
-      
-      echo "📦 Installing from root requirements.txt..."
-      if [ -f "requirements.txt" ]; then
-        pip install -r requirements.txt
-      fi
-      
-      echo "📦 Installing from backend requirements.txt..."
-      if [ -f "backend/requirements.txt" ]; then
-        pip install -r backend/requirements.txt
-      fi
-      
-      echo "🔧 Installing passlib specifically..."
-      pip install 'passlib[bcrypt]==1.7.4'
-      
-      echo "✅ Verifying passlib installation..."
-      python -c "import passlib; print('✅ passlib installed:', passlib.__version__)"
-      
-      echo "✅ Build complete!"
+      pip install -r requirements.txt
     startCommand: |
-      echo "🚀 Starting application from nested backend..."
       cd backend
-      echo "📍 Current directory: $(pwd)"
-      echo "🔧 Installing passlib in backend directory..."
-      pip install 'passlib[bcrypt]==1.7.4'
-      echo "🧪 Testing imports..."
-      python test_imports.py
-      echo "🌟 Starting FastAPI application..."
-      gunicorn app.main:app -w 2 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:$PORT
+      uvicorn app.main:app --host 0.0.0.0 --port $PORT
     healthCheckPath: /health
     envVars:
       - key: ENVIRONMENT
