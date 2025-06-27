@@ -22,6 +22,58 @@ def test_imports():
         print(f"❌ Uvicorn import failed: {e}")
         return False
     
+    # Test authentication dependencies
+    try:
+        import passlib
+        print(f"✅ passlib imported successfully - Version: {passlib.__version__}")
+    except ImportError as e:
+        print(f"❌ passlib not installed: {e}")
+        return False
+    
+    try:
+        from passlib.context import CryptContext
+        print("✅ passlib.context imported successfully")
+    except ImportError as e:
+        print(f"❌ passlib.context import failed: {e}")
+        return False
+    
+    try:
+        import jwt
+        print("✅ PyJWT imported successfully")
+    except ImportError as e:
+        print(f"❌ PyJWT import failed: {e}")
+        return False
+    
+    try:
+        import argon2
+        print("✅ argon2-cffi imported successfully")
+    except ImportError as e:
+        print(f"❌ argon2-cffi import failed: {e}")
+        return False
+    
+    # Test database dependencies
+    try:
+        import sqlalchemy
+        print(f"✅ SQLAlchemy imported successfully - Version: {sqlalchemy.__version__}")
+    except ImportError as e:
+        print(f"❌ SQLAlchemy import failed: {e}")
+        return False
+    
+    try:
+        import psycopg2
+        print("✅ psycopg2 imported successfully")
+    except ImportError as e:
+        print(f"❌ psycopg2 import failed: {e}")
+        return False
+    
+    # Test pydantic
+    try:
+        import pydantic
+        print(f"✅ Pydantic imported successfully - Version: {pydantic.__version__}")
+    except ImportError as e:
+        print(f"❌ Pydantic import failed: {e}")
+        return False
+    
     # Test app imports
     try:
         from app.config import settings
@@ -45,4 +97,4 @@ if __name__ == "__main__":
     if success:
         print("✅ DEPLOYMENT READY!")
     else:
-        print("❌ Import tests failed")
+        print("❌ Import tests failed - Check dependencies in requirements.txt")
