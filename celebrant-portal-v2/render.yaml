@@ -2,7 +2,15 @@ services:
   - type: web
     name: melbourne-celebrant-api
     env: python
-    buildCommand: pip install --upgrade pip && pip install -r requirements.txt
+    buildCommand: |
+      pip install --upgrade pip
+      if [ -f "requirements.txt" ]; then
+        pip install -r requirements.txt
+      fi
+      if [ -f "celebrant-portal-v2/backend/requirements.txt" ]; then
+        pip install -r celebrant-portal-v2/backend/requirements.txt
+      fi
+      python -c "import passlib; print('✅ passlib installed:', passlib.__version__)"
     startCommand: python start.py
     healthCheckPath: /health
     envVars:
