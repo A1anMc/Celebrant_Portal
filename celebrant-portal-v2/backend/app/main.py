@@ -1,11 +1,14 @@
-from fastapi import FastAPI, HTTPException, Depends, status
+from fastapi import FastAPI, HTTPException, Depends, status, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse, RedirectResponse, Response
 from contextlib import asynccontextmanager
 import logging
 import sys
 import traceback
 import os
+import httpx
 from pathlib import Path
 
 from app.config import settings
@@ -122,10 +125,64 @@ app.include_router(dashboard.router, prefix="/api/dashboard", tags=["Dashboard"]
 app.include_router(couples.router, prefix="/api/couples", tags=["Couples"])
 app.include_router(legal_forms.router, prefix="/api/legal-forms", tags=["Legal Forms"])
 
+# Mount static files for Next.js frontend
+frontend_dir = Path(__file__).parent.parent / "frontend"
+if frontend_dir.exists():
+    # Serve Next.js static files
+    app.mount("/static", StaticFiles(directory=str(frontend_dir / "public")), name="static")
+    app.mount("/_next", StaticFiles(directory=str(frontend_dir / ".next" / "static")), name="nextjs")
 
-@app.get("/")
-async def root():
-    """Root endpoint."""
+# Proxy requests to Next.js frontend
+@app.middleware("http")
+async def proxy_frontend(request: Request, call_next):
+    """Proxy non-API requests to Next.js frontend."""
+    
+    # Let API requests pass through
+    if request.url.path.startswith("/api") or request.url.path.startswith("/docs") or request.url.path.startswith("/openapi.json") or request.url.path == "/health":
+        response = await call_next(request)
+        return response
+    
+    # Proxy all other requests to Next.js frontend
+    try:
+        async with httpx.AsyncClient() as client:
+            frontend_url = f"http://localhost:3000{request.url.path}"
+            if request.url.query:
+                frontend_url += f"?{request.url.query}"
+            
+            # Forward the request to Next.js
+            response = await client.request(
+                method=request.method,
+                url=frontend_url,
+                headers=dict(request.headers),
+                content=await request.body() if request.method in ["POST", "PUT", "PATCH"] else None,
+                timeout=30.0
+            )
+            
+            # Return the response from Next.js
+            return Response(
+                content=response.content,
+                status_code=response.status_code,
+                headers=dict(response.headers),
+                media_type=response.headers.get("content-type")
+            )
+    except Exception as e:
+        logger.error(f"Error proxying to frontend: {e}")
+        # Fallback to API response for root
+        if request.url.path == "/":
+            return {
+                "message": "Melbourne Celebrant Portal API",
+                "version": "2.0.0",
+                "status": "running",
+                "environment": settings.environment,
+                "frontend_error": str(e)
+            }
+        # For other paths, return 404
+        raise HTTPException(status_code=404, detail="Page not found")
+
+
+@app.get("/api")
+async def api_root():
+    """API root endpoint."""
     return {
         "message": "Melbourne Celebrant Portal API",
         "version": "2.0.0",

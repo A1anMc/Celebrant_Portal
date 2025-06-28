@@ -10,7 +10,8 @@ export interface CoupleListResponse {
 }
 
 export const couplesService = {
-  getCouples: async (queryString?: string): Promise<CoupleListResponse> => {
+  getCouples: async (params?: CoupleSearchParams): Promise<CoupleListResponse> => {
+    const queryString = params ? new URLSearchParams(params as any).toString() : '';
     const url = queryString ? `/api/couples/?${queryString}` : '/api/couples/';
     return apiRequest<CoupleListResponse>(() => api.get(url));
   },

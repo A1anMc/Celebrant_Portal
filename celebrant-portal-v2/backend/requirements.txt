@@ -1,9 +1,10 @@
 # FastAPI and core dependencies
-fastapi==0.115.6
-uvicorn[standard]==0.32.1
+fastapi==0.103.2
+uvicorn[standard]==0.23.2
 python-multipart==0.0.12
 pydantic==2.10.3
 pydantic-settings==2.6.1
+python-dotenv==1.0.1
 
 # Database
 sqlalchemy==2.0.36
@@ -15,16 +16,21 @@ aiosqlite==0.19.0
 PyJWT==2.10.1
 passlib[bcrypt]==1.7.4
 python-jose[cryptography]==3.3.0
+cryptography==42.0.5
 
 # CORS
-starlette==0.36.3
-starlette-csrf==2.1.0
+starlette-csrf==3.0.0
 
 # Utilities
-python-dateutil==2.8.2
+python-dateutil==2.9.0
 pytz==2023.4
 requests==2.31.0
 aiofiles==23.2.1
+httpx==0.25.2
 
 # Production
 gunicorn==23.0.0
+
+# Added from the code block
+bcrypt==4.1.2
+email-validator==2.1.1

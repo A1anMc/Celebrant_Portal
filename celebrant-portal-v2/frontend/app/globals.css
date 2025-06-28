@@ -1,0 +1,258 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Inter:wght@300;400;500;600;700&display=swap');
+
+/* Melbourne Celebrant Brand Colors - Direct Application */
+@layer base {
+  :root {
+    /* Melbourne Celebrant Brand Colors */
+    --background: #fefcf9;
+    --foreground: #2c2c2c;
+    --primary: #D4A373;
+    --primary-light: #E8C4A0;
+    --primary-dark: #B8956B;
+    --secondary: #F7E6D7;
+    --accent: #E9C9D1;
+    --accent-light: #F2D9E0;
+    --muted: #F5F1ED;
+    --border: #E5D5C8;
+    --card: #ffffff;
+    --card-foreground: #2c2c2c;
+    --destructive: #dc2626;
+    --success: #16a34a;
+    --warning: #d97706;
+    
+    /* Font families */
+    --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --font-serif: 'Playfair Display', Georgia, serif;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    background: #fefcf9;
+    color: #2c2c2c;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+
+  /* Typography */
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-weight: 600;
+    line-height: 1.2;
+    color: #B8956B;
+  }
+
+  h1 {
+    font-size: 2.5rem;
+    font-weight: 700;
+  }
+
+  h2 {
+    font-size: 2rem;
+    font-weight: 600;
+  }
+
+  h3 {
+    font-size: 1.5rem;
+    font-weight: 600;
+  }
+}
+
+@layer components {
+  /* Card Components */
+  .card {
+    @apply rounded-xl border bg-card text-card-foreground shadow-sm;
+    background: #ffffff;
+    border-color: #E5D5C8;
+    color: #2c2c2c;
+  }
+
+  .card-header {
+    @apply flex flex-col space-y-1.5 p-6;
+  }
+
+  .card-title {
+    @apply text-2xl font-semibold leading-none tracking-tight;
+    font-family: 'Playfair Display', Georgia, serif;
+    color: #B8956B;
+  }
+
+  .card-description {
+    @apply text-sm text-muted-foreground;
+    color: rgba(44, 44, 44, 0.7);
+  }
+
+  .card-content {
+    @apply p-6 pt-0;
+  }
+
+  /* Button Components */
+  .btn {
+    @apply inline-flex items-center justify-center rounded-lg text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-background;
+  }
+
+  .btn-primary {
+    @apply bg-primary text-white hover:bg-primary-dark;
+    background-color: #D4A373;
+    color: white;
+  }
+
+  .btn-primary:hover {
+    background-color: #B8956B;
+  }
+
+  .btn-secondary {
+    @apply bg-secondary text-secondary-foreground hover:bg-secondary/80;
+    background-color: #F7E6D7;
+    color: #2c2c2c;
+  }
+
+  .btn-outline {
+    @apply border border-input bg-background hover:bg-accent hover:text-accent-foreground;
+    border-color: #E5D5C8;
+    background-color: #fefcf9;
+  }
+
+  .btn-outline:hover {
+    background-color: #E9C9D1;
+  }
+
+  /* Input Components */
+  .input {
+    @apply flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50;
+    border-color: #E5D5C8;
+    background-color: #fefcf9;
+  }
+
+  .input:focus-visible {
+    ring-color: #D4A373;
+  }
+
+  /* Sidebar Navigation */
+  .sidebar-nav {
+    background: linear-gradient(135deg, #F7E6D7 0%, #E9C9D1 100%);
+  }
+
+  .sidebar-nav-item {
+    @apply flex items-center gap-3 rounded-lg px-3 py-2 text-foreground transition-all hover:bg-accent/50;
+    color: #2c2c2c;
+  }
+
+  .sidebar-nav-item:hover {
+    background-color: rgba(233, 201, 209, 0.5);
+  }
+
+  .sidebar-nav-item.active {
+    background-color: #D4A373;
+    color: white;
+  }
+
+  /* Custom Shadows */
+  .shadow-soft {
+    box-shadow: 0 2px 15px -3px rgba(212, 163, 115, 0.1), 0 4px 6px -2px rgba(212, 163, 115, 0.05);
+  }
+
+  .shadow-soft-lg {
+    box-shadow: 0 10px 15px -3px rgba(212, 163, 115, 0.1), 0 4px 6px -2px rgba(212, 163, 115, 0.05);
+  }
+
+  /* Animations */
+  .animate-fade-in {
+    animation: fadeIn 0.5s ease-in-out;
+  }
+
+  .animate-slide-up {
+    animation: slideUp 0.3s ease-out;
+  }
+
+  .animate-slide-down {
+    animation: slideDown 0.3s ease-out;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  @keyframes slideUp {
+    from { transform: translateY(10px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+
+  @keyframes slideDown {
+    from { transform: translateY(-10px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+}
+
+@layer utilities {
+  /* Background Utilities */
+  .bg-primary { background-color: #D4A373 !important; }
+  .bg-primary-light { background-color: #E8C4A0 !important; }
+  .bg-primary-dark { background-color: #B8956B !important; }
+  .bg-secondary { background-color: #F7E6D7 !important; }
+  .bg-accent { background-color: #E9C9D1 !important; }
+  .bg-accent-light { background-color: #F2D9E0 !important; }
+  .bg-muted { background-color: #F5F1ED !important; }
+  .bg-background { background-color: #fefcf9 !important; }
+  .bg-card { background-color: #ffffff !important; }
+
+  /* Text Color Utilities */
+  .text-primary { color: #D4A373 !important; }
+  .text-primary-light { color: #E8C4A0 !important; }
+  .text-primary-dark { color: #B8956B !important; }
+  .text-secondary { color: #F7E6D7 !important; }
+  .text-accent { color: #E9C9D1 !important; }
+  .text-foreground { color: #2c2c2c !important; }
+  .text-muted { color: rgba(44, 44, 44, 0.6) !important; }
+
+  /* Border Utilities */
+  .border-primary { border-color: #D4A373 !important; }
+  .border-secondary { border-color: #F7E6D7 !important; }
+  .border-accent { border-color: #E9C9D1 !important; }
+  .border-border { border-color: #E5D5C8 !important; }
+
+  /* Font Family Utilities */
+  .font-serif { font-family: 'Playfair Display', Georgia, serif !important; }
+  .font-sans { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important; }
+
+  /* Gradient Utilities */
+  .bg-gradient-celebrant {
+    background: linear-gradient(135deg, #F7E6D7 0%, #fefcf9 50%, #E9C9D1 100%);
+  }
+
+  .bg-gradient-primary {
+    background: linear-gradient(135deg, #D4A373 0%, #E8C4A0 100%);
+  }
+
+  /* Text clipping utility */
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  /* Custom scrollbar */
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: #F5F1ED;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: #E8C4A0;
+    border-radius: 3px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background: #D4A373;
+  }
+}

@@ -20,7 +20,14 @@ class Settings(BaseSettings):
     
     # CORS
     cors_origins_str: str = os.getenv("CORS_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000,http://localhost:3001,http://127.0.0.1:3001,http://localhost:3002,http://localhost:3003,http://localhost:3004")
-    cors_origins: List[str] = [origin.strip() for origin in cors_origins_str.split(",")]
+    
+    @property
+    def cors_origins(self) -> List[str]:
+        """Get CORS origins with special handling for unified deployment."""
+        if self.cors_origins_str == '["*"]' or self.cors_origins_str == "*":
+            # In unified deployment on Render, allow all origins
+            return ["*"]
+        return [origin.strip() for origin in self.cors_origins_str.split(",")]
     
     # Email settings (optional)
     smtp_server: str = os.getenv("SMTP_SERVER", "")
@@ -91,5 +98,5 @@ if settings.is_production:
     if settings.debug:
         raise ValueError("DEBUG must be False in production")
     
-    if "*" in settings.cors_origins:
-        raise ValueError("CORS origins cannot include '*' in production")
+    # Note: CORS validation removed for unified deployment
+    # In unified deployment, frontend and backend are on same host

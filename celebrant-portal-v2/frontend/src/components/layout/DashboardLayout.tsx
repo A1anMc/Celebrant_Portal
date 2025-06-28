@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React from 'react';
+import { useAuth } from '../../../src/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '@/contexts/AuthContext';
 import Sidebar from './Sidebar';
 
 interface DashboardLayoutProps {
@@ -10,40 +10,32 @@ interface DashboardLayoutProps {
 }
 
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
-  const { isAuthenticated, loading } = useAuth();
+  const { user, loading } = useAuth();
   const router = useRouter();
 
-  useEffect(() => {
-    if (!loading && !isAuthenticated) {
-      router.push('/login');
-    }
-  }, [isAuthenticated, loading, router]);
-
+  // Show loading spinner while checking authentication
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
-        </div>
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
       </div>
     );
   }
 
-  if (!isAuthenticated) {
-    return null; // Will be redirected by useEffect
+  // Redirect to login if not authenticated
+  if (!user) {
+    router.push('/login');
+    return null;
   }
 
   return (
-    <div className="h-screen flex bg-gray-50">
+    <div className="min-h-screen bg-background flex">
       <Sidebar />
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <main className="flex-1 overflow-x-hidden overflow-y-auto">
-          <div className="container mx-auto px-6 py-8">
-            {children}
-          </div>
-        </main>
-      </div>
+      <main className="flex-1 lg:ml-64">
+        <div className="p-6 lg:p-8">
+          {children}
+        </div>
+      </main>
     </div>
   );
 } 

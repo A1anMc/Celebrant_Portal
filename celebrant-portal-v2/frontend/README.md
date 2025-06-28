@@ -1,36 +1,139 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Melbourne Celebrant Portal - Frontend
 
-## Getting Started
+This is the frontend application for the Melbourne Celebrant Portal, built with Next.js 15, TypeScript, and Tailwind CSS.
 
-First, run the development server:
+## 🚀 Quick Start
 
+### Prerequisites
+- Node.js 18+ and npm
+- Backend API running on http://localhost:8000
+
+### Development Setup
 ```bash
+# Install dependencies
+npm install
+
+# Start development server
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+
+# Build for production
+npm run build
+
+# Start production server
+npm start
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 🎨 Melbourne Celebrant Styling
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Brand Colors
+- Primary: #D4A373 (warm gold)
+- Secondary: #F7E6D7 (cream)
+- Accent: #E9C9D1 (soft pink)
+- Background: #FEFCF9 (off-white)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Typography
+- Headers: Playfair Display (serif)
+- Body: Inter (sans-serif)
 
-## Learn More
+### Styling System
+- **Framework**: Tailwind CSS with custom configuration
+- **Components**: Card, Button, Input with Melbourne Celebrant branding
+- **Global Styles**: `app/globals.css` with custom classes and utilities
+- **Config**: `tailwind.config.ts` with custom colors and fonts
 
-To learn more about Next.js, take a look at the following resources:
+## 📁 Project Structure
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```
+frontend/
+├── app/                          # Next.js App Router
+│   ├── layout.tsx                # Root layout with fonts
+│   ├── page.tsx                  # Landing page
+│   ├── globals.css               # Melbourne Celebrant styling
+│   ├── login/                    # Authentication
+│   ├── dashboard/                # Main dashboard
+│   ├── couples/                  # Couple management
+│   ├── ceremonies/               # Ceremony tracking
+│   ├── legal-forms/              # NOIM compliance
+│   ├── invoices/                 # Financial management
+│   ├── templates/                # Ceremony templates
+│   ├── reports/                  # Business analytics
+│   └── settings/                 # User preferences
+├── src/                          # Source code
+│   ├── components/               # Reusable UI components
+│   ├── contexts/                 # React contexts (AuthContext)
+│   ├── services/                 # API clients
+│   ├── types/                    # TypeScript definitions
+│   └── lib/                      # Utility functions
+├── public/                       # Static assets
+├── package.json                  # Dependencies
+├── tailwind.config.ts            # Tailwind configuration
+├── next.config.js                # Next.js configuration
+└── vercel.json                   # Vercel deployment config
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 🔧 Key Features
 
-## Deploy on Vercel
+- **Authentication**: Secure login/logout with JWT tokens
+- **Dashboard**: Business metrics and overview
+- **Couple Management**: Add, edit, search couples
+- **Ceremony Tracking**: Schedule and manage ceremonies
+- **Legal Compliance**: NOIM tracking and deadlines
+- **Financial Management**: Invoice creation and tracking
+- **Templates**: Ceremony script management
+- **Reports**: Business analytics and insights
+- **Settings**: User preferences and configuration
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## 🌐 Environment Variables
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Create `.env.local` in the frontend directory:
+
+```bash
+NEXT_PUBLIC_API_URL=http://localhost:8000
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+NEXT_PUBLIC_APP_NAME=Melbourne Celebrant Portal
+NEXT_PUBLIC_APP_VERSION=2.0.0
+```
+
+## 🚀 Deployment
+
+### Vercel (Recommended)
+1. Connect your GitHub repository to Vercel
+2. Set root directory to `frontend`
+3. Add environment variables in Vercel dashboard
+4. Deploy automatically on git push
+
+### Manual Build
+```bash
+npm run build
+npm start
+```
+
+## 🛠️ Development
+
+### Adding New Pages
+1. Create page in `app/` directory
+2. Follow Next.js App Router conventions
+3. Apply Melbourne Celebrant styling classes
+4. Add navigation link in `DashboardLayout.tsx`
+
+### Styling Guidelines
+- Use Melbourne Celebrant color classes: `bg-primary`, `text-primary-dark`
+- Apply consistent card styling: `card`, `card-header`, `card-content`
+- Use serif fonts for headers: `font-serif`
+- Include hover effects and animations
+
+### API Integration
+- Use services in `src/services/` for API calls
+- Handle authentication with `AuthContext`
+- Implement proper error handling and loading states
+
+## 📚 Documentation
+
+For complete project documentation, see the main README in the project root: `../README.md`
+
+## 🔗 Links
+
+- **Backend API**: http://localhost:8000
+- **API Documentation**: http://localhost:8000/docs
+- **Production Frontend**: https://your-app.vercel.app
+- **Production API**: https://your-backend.onrender.com

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useId } from 'react';
 import { cn } from '@/lib/utils';
 
 export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
@@ -11,7 +11,8 @@ export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> 
 
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
   ({ className, type = 'text', label, error, helperText, id, leftIcon, rightIcon, ...props }, ref) => {
-    const inputId = id || `input-${Math.random().toString(36).substr(2, 9)}`;
+    const generatedId = useId();
+    const inputId = id || `input-${generatedId}`;
 
     return (
       <div className="space-y-2">
@@ -76,7 +77,8 @@ const Textarea = React.forwardRef<
     helperText?: string;
   }
 >(({ className, label, error, helperText, id, ...props }, ref) => {
-  const textareaId = id || `textarea-${Math.random().toString(36).substr(2, 9)}`;
+  const generatedId = useId();
+  const textareaId = id || `textarea-${generatedId}`;
 
   return (
     <div className="space-y-2">

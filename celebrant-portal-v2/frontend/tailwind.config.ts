@@ -2,38 +2,52 @@ import type { Config } from "tailwindcss";
 
 const config: Config = {
   content: [
-    "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
-    "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
-    "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
+    "./app/**/*.{js,ts,jsx,tsx,mdx}",
+    "./src/**/*.{js,ts,jsx,tsx,mdx}",
   ],
   theme: {
     extend: {
       colors: {
-        background: "var(--color-background)",
-        foreground: "var(--color-foreground)",
+        // Melbourne Celebrant Brand Colors - Direct Values
+        background: "#fefcf9",
+        foreground: "#2c2c2c",
         primary: {
-          DEFAULT: "var(--color-primary)",
-          light: "var(--color-primary-light)",
-          dark: "var(--color-primary-dark)",
+          DEFAULT: "#D4A373",
+          light: "#E8C4A0",
+          dark: "#B8956B",
         },
-        secondary: "var(--color-secondary)",
+        secondary: "#F7E6D7",
         accent: {
-          DEFAULT: "var(--color-accent)",
-          light: "var(--color-accent-light)",
+          DEFAULT: "#E9C9D1",
+          light: "#F2D9E0",
         },
-        muted: "var(--color-muted)",
-        border: "var(--color-border)",
+        muted: {
+          DEFAULT: "#F5F1ED",
+          foreground: "rgba(44, 44, 44, 0.6)",
+        },
+        border: "#E5D5C8",
+        input: "#E5D5C8",
+        ring: "#D4A373",
         card: {
-          DEFAULT: "var(--color-card)",
-          foreground: "var(--color-card-foreground)",
+          DEFAULT: "#ffffff",
+          foreground: "#2c2c2c",
         },
-        destructive: "var(--color-destructive)",
-        success: "var(--color-success)",
-        warning: "var(--color-warning)",
+        destructive: {
+          DEFAULT: "#dc2626",
+          foreground: "#ffffff",
+        },
+        success: {
+          DEFAULT: "#16a34a",
+          foreground: "#ffffff",
+        },
+        warning: {
+          DEFAULT: "#d97706",
+          foreground: "#ffffff",
+        },
       },
       fontFamily: {
-        sans: ["var(--font-inter)", "Inter", "system-ui", "sans-serif"],
-        serif: ["var(--font-playfair)", "Playfair Display", "Georgia", "serif"],
+        sans: ["Inter", "system-ui", "sans-serif"],
+        serif: ["Playfair Display", "Georgia", "serif"],
         mono: ["SF Mono", "Monaco", "Consolas", "monospace"],
       },
       fontSize: {
@@ -54,6 +68,10 @@ const config: Config = {
         "128": "32rem",
       },
       borderRadius: {
+        lg: "0.5rem",
+        xl: "0.75rem",
+        "2xl": "1rem",
+        "3xl": "1.5rem",
         "4xl": "2rem",
       },
       boxShadow: {
