@@ -12,11 +12,14 @@ from typing import Callable
 import secrets
 
 from .config import settings
-from .database import create_tables
+from .database import create_tables, engine, Base
 from .routers import auth, couples
 
 # Create tables on startup
 create_tables()
+
+# Create database tables
+Base.metadata.create_all(bind=engine)
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -59,6 +62,10 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         self.requests = {}
 
     async def dispatch(self, request: Request, call_next: Callable):
+        # Skip rate limiting for health check endpoint
+        if request.url.path == "/health":
+            return await call_next(request)
+            
         client_ip = request.client.host
         current_time = time.time()
 
@@ -115,11 +122,13 @@ def read_root():
 @app.middleware("http")
 async def add_security_headers(request: Request, call_next):
     response = await call_next(request)
-    response.headers["X-Content-Type-Options"] = "nosniff"
-    response.headers["X-Frame-Options"] = "DENY"
-    response.headers["X-XSS-Protection"] = "1; mode=block"
-    response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
-    response.headers["Content-Security-Policy"] = "default-src 'self'; img-src 'self' data:; script-src 'self'"
+    # Skip security headers for health check endpoint
+    if request.url.path != "/health":
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["X-XSS-Protection"] = "1; mode=block"
+        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+        response.headers["Content-Security-Policy"] = "default-src 'self'; img-src 'self' data:; script-src 'self'"
     return response
 
 @app.exception_handler(CsrfProtectError)
