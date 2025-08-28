@@ -1,6 +1,8 @@
 # Melbourne Celebrant Portal
 
-A professional web application for wedding celebrants to manage couples, ceremonies, and business operations. Built with modern technologies and designed for deployment on Render.
+A professional web application for wedding celebrants to manage couples, ceremonies, and business operations. Built with modern technologies and designed for deployment on Render and Vercel.
+
+**Latest Update**: Fixed Vercel deployment configuration for monorepo structure.
 
 ## 🏗️ Project Structure
 

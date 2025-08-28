@@ -10,8 +10,12 @@ if settings.database_url.startswith("sqlite"):
         connect_args={"check_same_thread": False}
     )
 else:
-    # PostgreSQL for production
-    engine = create_engine(settings.database_url)
+    # PostgreSQL for production - use psycopg3 dialect
+    engine = create_engine(
+        settings.database_url.replace("postgresql://", "postgresql+psycopg://"),
+        pool_pre_ping=True,
+        pool_recycle=300
+    )
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 

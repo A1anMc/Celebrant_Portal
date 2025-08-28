@@ -1,0 +1,200 @@
+name: Deployment Validation - Robust AI Agent Protocol
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    # Run health checks every 6 hours
+    - cron: '0 */6 * * *'
+
+jobs:
+  # Phase 1: Initial State & Pre-Execution Checks
+  dependency-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          
+      - name: Install Python dependencies
+        run: |
+          cd backend
+          pip install -r requirements.txt
+          
+      - name: Install Node.js dependencies
+        run: |
+          cd frontend
+          npm ci
+          
+      - name: Security audit - Python
+        run: |
+          cd backend
+          pip install safety
+          safety check --json --output safety-report.json || true
+          
+      - name: Security audit - Node.js
+        run: |
+          cd frontend
+          npm audit --audit-level=moderate --json > npm-audit-report.json || true
+          
+      - name: Upload security reports
+        uses: actions/upload-artifact@v3
+        with:
+          name: security-reports
+          path: |
+            backend/safety-report.json
+            frontend/npm-audit-report.json
+
+  # Phase 2: Execution & Real-Time Monitoring
+  code-quality:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          
+      - name: Install Python dependencies
+        run: |
+          cd backend
+          pip install -r requirements.txt
+          
+      - name: Run linting
+        run: |
+          cd backend
+          pip install black flake8 isort
+          black --check .
+          flake8 .
+          isort --check-only .
+          
+      - name: Run type checking
+        run: |
+          cd backend
+          pip install mypy
+          mypy app/ --ignore-missing-imports
+          
+      - name: Run tests
+        run: |
+          cd backend
+          pip install pytest pytest-cov
+          pytest --cov=app --cov-report=xml
+          
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v3
+        with:
+          name: coverage-report
+          path: backend/coverage.xml
+
+  # Phase 3: Continuous Validation & Feedback Loop
+  deployment-health-check:
+    runs-on: ubuntu-latest
+    needs: [dependency-audit, code-quality]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          
+      - name: Install dependencies
+        run: |
+          cd backend
+          pip install -r requirements.txt
+          
+      - name: Run deployment validation
+        env:
+          BACKEND_URL: ${{ secrets.BACKEND_URL }}
+          FRONTEND_URL: ${{ secrets.FRONTEND_URL }}
+        run: |
+          cd backend
+          python scripts/deployment_monitor.py
+          
+      - name: Generate deployment report
+        run: |
+          cd backend
+          python scripts/deployment_monitor.py > deployment-report.json
+          
+      - name: Upload deployment report
+        uses: actions/upload-artifact@v3
+        with:
+          name: deployment-report
+          path: backend/deployment-report.json
+
+  # Automated Reporting & Alerts
+  notify-status:
+    runs-on: ubuntu-latest
+    needs: [dependency-audit, code-quality, deployment-health-check]
+    if: always()
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v3
+        with:
+          path: artifacts
+          
+      - name: Generate status report
+        run: |
+          echo "## 🚀 Deployment Validation Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Timestamp:** $(date)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Check dependency audit results
+          if [ -f "artifacts/security-reports/safety-report.json" ]; then
+            echo "### 🔒 Security Audit" >> $GITHUB_STEP_SUMMARY
+            echo "✅ Python dependencies scanned" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          if [ -f "artifacts/security-reports/npm-audit-report.json" ]; then
+            echo "✅ Node.js dependencies scanned" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          # Check code quality results
+          if [ "${{ needs.code-quality.result }}" == "success" ]; then
+            echo "### 📊 Code Quality" >> $GITHUB_STEP_SUMMARY
+            echo "✅ Linting passed" >> $GITHUB_STEP_SUMMARY
+            echo "✅ Type checking passed" >> $GITHUB_STEP_SUMMARY
+            echo "✅ Tests passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "### 📊 Code Quality" >> $GITHUB_STEP_SUMMARY
+            echo "❌ Code quality checks failed" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          # Check deployment health
+          if [ -f "artifacts/deployment-report/deployment-report.json" ]; then
+            echo "### 🏥 Deployment Health" >> $GITHUB_STEP_SUMMARY
+            echo "✅ Health check completed" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Overall Status:** ${{ needs.deployment-health-check.result }}" >> $GITHUB_STEP_SUMMARY
+          
+      - name: Send notification on failure
+        if: failure()
+        run: |
+          echo "❌ **Deployment Validation FAILED**" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Please check the logs for details and fix the issues before proceeding." >> $GITHUB_STEP_SUMMARY
+          
+      - name: Send notification on success
+        if: success()
+        run: |
+          echo "✅ **Deployment Validation PASSED**" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "All checks passed! The deployment is ready for production." >> $GITHUB_STEP_SUMMARY

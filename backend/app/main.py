@@ -12,7 +12,7 @@ from typing import Callable
 import secrets
 from datetime import datetime
 
-from .core.config import settings
+from .core.config import settings, get_allowed_origins
 from .core.database import create_tables, engine, Base
 from .api.v1 import auth, couples, ceremonies, invoices
 from .core.monitoring import RequestLogger, HealthChecker, setup_logging
@@ -44,7 +44,7 @@ app.include_router(invoices.router, prefix="/api/v1")
 # CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.allowed_origins,
+    allow_origins=get_allowed_origins(),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

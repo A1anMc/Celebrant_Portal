@@ -3,6 +3,7 @@ services:
     name: melbourne-celebrant-portal-backend
     env: python
     plan: starter
+    rootDir: backend
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
     healthCheckPath: /health
@@ -22,4 +23,4 @@ services:
     # Add these environment variables in Render dashboard:
     # DATABASE_URL=postgresql://username:password@host:port/database_name
     # SECRET_KEY=your-super-secret-key-here
-    # ALLOWED_ORIGINS=https://your-frontend-domain.vercel.app 
+    # ALLOWED_ORIGINS=https://celebrant-portal-ah8ssgciz-alans-projects-baf4c067.vercel.app,http://localhost:3000 

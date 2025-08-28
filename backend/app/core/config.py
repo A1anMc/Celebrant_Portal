@@ -2,6 +2,22 @@ from pydantic_settings import BaseSettings
 from typing import Optional, List
 import os
 import secrets
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
+
+def get_allowed_origins() -> List[str]:
+    """Parse ALLOWED_ORIGINS environment variable safely."""
+    env_origins = os.getenv("ALLOWED_ORIGINS")
+    if env_origins:
+        return [origin.strip() for origin in env_origins.split(",") if origin.strip()]
+    
+    # Fallback to defaults
+    return [
+        "http://localhost:3000",
+        "https://celebrant-portal-ah8ssgciz-alans-projects-baf4c067.vercel.app"
+    ]
 
 class Settings(BaseSettings):
     # Database
@@ -25,12 +41,6 @@ class Settings(BaseSettings):
     # Rate Limiting
     rate_limit_calls: int = 100
     rate_limit_window: int = 60  # seconds
-    
-    # CORS
-    allowed_origins: List[str] = [
-        "http://localhost:3000",
-        "https://your-frontend-domain.onrender.com"
-    ]
     
     # Environment
     environment: str = os.getenv("ENVIRONMENT", "development")
