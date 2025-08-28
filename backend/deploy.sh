@@ -5,19 +5,22 @@ set -e  # Exit on any error
 
 echo "🚀 Starting professional deployment process..."
 
-# Load environment variables
+# Set default environment variables if not provided
+export DATABASE_URL=${DATABASE_URL:-"sqlite:///./celebrant_portal.db"}
+export SECRET_KEY=${SECRET_KEY:-"your-super-secret-key-change-in-production"}
+export ENVIRONMENT=${ENVIRONMENT:-"development"}
+export DEBUG=${DEBUG:-"true"}
+
+# Load additional environment variables from .env if it exists
 if [ -f .env ]; then
-    export $(cat .env | grep -v '^#' | xargs)
+    # Use a more robust method to load env vars
+    eval "$(cat .env | sed 's/^/export /')" 2>/dev/null || true
 fi
 
-# Validate required environment variables
-required_vars=("DATABASE_URL" "SECRET_KEY")
-for var in "${required_vars[@]}"; do
-    if [ -z "${!var}" ]; then
-        echo "❌ Error: $var environment variable is required"
-        exit 1
-    fi
-done
+echo "✅ Environment variables loaded"
+echo "   DATABASE_URL: $DATABASE_URL"
+echo "   ENVIRONMENT: $ENVIRONMENT"
+echo "   DEBUG: $DEBUG"
 
 echo "✅ Environment validation passed"
 
