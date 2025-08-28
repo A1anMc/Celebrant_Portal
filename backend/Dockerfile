@@ -32,8 +32,16 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:8000/health || exit 1
 
-# Make startup script executable
-RUN chmod +x start.sh
+# Make scripts executable
+RUN chmod +x start.sh deploy.sh
 
-# Run the application
-CMD ["./start.sh"]
+# Create non-root user for security
+RUN adduser --disabled-password --gecos '' appuser && chown -R appuser /app
+USER appuser
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8000/health || exit 1
+
+# Run deployment script then start application
+CMD ["./deploy.sh"] && ["./start.sh"]

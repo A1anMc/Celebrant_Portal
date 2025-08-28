@@ -20,13 +20,17 @@ from .core.monitoring import RequestLogger, HealthChecker, setup_logging
 # Setup logging
 setup_logging(settings.log_level if hasattr(settings, 'log_level') else "INFO")
 
-# Create tables on startup (with error handling)
-try:
-    create_tables()
-    print("Database tables created successfully")
-except Exception as e:
-    print(f"Warning: Could not create database tables on startup: {e}")
-    print("Application will continue to run, but database operations may fail")
+# Database initialization (migrations should be run separately)
+# For development, we can create tables, but in production use migrations
+if settings.environment == "development":
+    try:
+        create_tables()
+        print("Development: Database tables created successfully")
+    except Exception as e:
+        print(f"Warning: Could not create database tables on startup: {e}")
+        print("Application will continue to run, but database operations may fail")
+else:
+    print("Production: Database tables should be managed via Alembic migrations")
 
 # Initialize FastAPI app
 app = FastAPI(
