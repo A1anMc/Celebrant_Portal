@@ -23,6 +23,14 @@ class Settings(BaseSettings):
     # Database
     database_url: str = os.getenv("DATABASE_URL", "sqlite:///./celebrant_portal.db")
     
+    # Validate DATABASE_URL format
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        # If DATABASE_URL is malformed or empty, fallback to SQLite
+        if not self.database_url or self.database_url == "postgresql://username:password@host:port/database_name":
+            self.database_url = "sqlite:///./celebrant_portal.db"
+            print("Warning: Using SQLite database as fallback")
+    
     # Security
     secret_key: str = os.getenv("SECRET_KEY", secrets.token_urlsafe(32))
     algorithm: str = "HS256"

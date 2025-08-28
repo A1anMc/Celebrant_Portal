@@ -20,8 +20,13 @@ from .core.monitoring import RequestLogger, HealthChecker, setup_logging
 # Setup logging
 setup_logging(settings.log_level if hasattr(settings, 'log_level') else "INFO")
 
-# Create tables on startup
-create_tables()
+# Create tables on startup (with error handling)
+try:
+    create_tables()
+    print("Database tables created successfully")
+except Exception as e:
+    print(f"Warning: Could not create database tables on startup: {e}")
+    print("Application will continue to run, but database operations may fail")
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -126,11 +131,23 @@ app.add_middleware(RateLimitMiddleware)
 @app.get("/health")
 async def health_check():
     """Health check endpoint for monitoring."""
+    from .core.database import engine
+    
+    # Check database connectivity
+    db_status = "unknown"
+    try:
+        with engine.connect() as conn:
+            conn.execute("SELECT 1")
+            db_status = "connected"
+    except Exception as e:
+        db_status = f"error: {str(e)}"
+    
     return {
-        "status": "healthy",
+        "status": "healthy" if db_status == "connected" else "degraded",
         "timestamp": datetime.now().isoformat(),
         "version": "0.2.0",
-        "message": "Melbourne Celebrant Portal is running"
+        "message": "Melbourne Celebrant Portal is running",
+        "database": db_status
     }
 
 @app.get("/metrics")
