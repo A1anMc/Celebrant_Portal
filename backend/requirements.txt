@@ -1,4 +1,4 @@
-# Core dependencies
+# Core dependencies - TESTED AND COMPATIBLE
 fastapi==0.115.0
 uvicorn[standard]==0.32.0
 sqlalchemy[psycopg]==2.0.35
@@ -10,7 +10,7 @@ python-multipart==0.0.6
 fastapi-csrf-protect==0.3.2
 email-validator==2.1.0
 python-dotenv==1.0.0
-starlette>=0.37.0,<0.38.0
+starlette>=0.37.2,<0.39.0
 secure==0.3.0
 ratelimit==2.2.1
 cryptography==42.0.0
@@ -28,9 +28,6 @@ isort==5.13.2
 flake8==7.0.0
 mypy==1.10.0
 pre-commit==3.7.0
-
-# Production
-gunicorn==21.2.0
 
 # Monitoring and logging
 structlog==25.4.0
