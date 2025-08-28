@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: melbourne-celebrant-portal-backend
+    env: python
+    plan: starter
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.7
+      - key: ENVIRONMENT
+        value: production
+      - key: LOG_LEVEL
+        value: INFO
+      - key: DEBUG
+        value: false
+      - key: ALGORITHM
+        value: HS256
+      - key: ACCESS_TOKEN_EXPIRE_MINUTES
+        value: 30
+    # Add these environment variables in Render dashboard:
+    # DATABASE_URL=postgresql://username:password@host:port/database_name
+    # SECRET_KEY=your-super-secret-key-here
+    # ALLOWED_ORIGINS=https://your-frontend-domain.vercel.app 

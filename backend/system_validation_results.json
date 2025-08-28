@@ -1,0 +1,132 @@
+{
+  "timestamp": "2025-08-27T23:15:27.175892",
+  "system_info": {},
+  "validation_results": {
+    "python_environment": {
+      "python_version": "3.11.7 (main, Jun 23 2025, 22:56:41) [Clang 17.0.0 (clang-1700.0.13.5)]",
+      "python_path": "/Users/alanmccarthy/Cursor - june 2025/backend/venv/bin/python",
+      "platform": "darwin",
+      "architecture": "64-bit",
+      "issues": [],
+      "status": "healthy",
+      "virtual_env": true,
+      "venv_path": "/Users/alanmccarthy/Cursor - june 2025/backend/venv"
+    },
+    "database_connection": {
+      "connection": true,
+      "schema": true,
+      "tables": [
+        "users",
+        "couples",
+        "invoices",
+        "ceremonies",
+        "failed_login_attempts",
+        "refresh_tokens"
+      ],
+      "issues": [],
+      "status": "healthy",
+      "user_count": 1
+    },
+    "api_endpoints": {
+      "server_running": true,
+      "endpoints": {
+        "/": {
+          "status_code": 200,
+          "accessible": true,
+          "description": "Root endpoint"
+        },
+        "/docs": {
+          "status_code": 200,
+          "accessible": true,
+          "description": "API documentation"
+        },
+        "/api/v1/auth/me": {
+          "status_code": 403,
+          "accessible": true,
+          "description": "Authentication endpoint"
+        },
+        "/metrics": {
+          "status_code": 200,
+          "accessible": true,
+          "description": "Metrics endpoint"
+        }
+      },
+      "authentication": true,
+      "issues": [],
+      "status": "healthy",
+      "health_check": {
+        "status": "healthy",
+        "timestamp": "2025-08-27T23:15:28.891858",
+        "version": "0.2.0",
+        "message": "Melbourne Celebrant Portal is running"
+      }
+    },
+    "security_features": {
+      "password_hashing": true,
+      "jwt_tokens": true,
+      "cors_config": true,
+      "rate_limiting": false,
+      "security_headers": true,
+      "issues": [],
+      "status": "healthy",
+      "warnings": [
+        "Rate limiting not triggered in test"
+      ]
+    },
+    "frontend_integration": {
+      "server_running": false,
+      "api_connectivity": false,
+      "build_status": true,
+      "issues": [
+        "Frontend server returned 500"
+      ],
+      "status": "critical"
+    },
+    "performance_metrics": {
+      "response_times": {
+        "/health": {
+          "time_ms": 7.691860198974609,
+          "status_code": 200,
+          "acceptable": true
+        },
+        "/": {
+          "time_ms": 8.591175079345703,
+          "status_code": 200,
+          "acceptable": true
+        },
+        "/docs": {
+          "time_ms": 10.365009307861328,
+          "status_code": 200,
+          "acceptable": true
+        }
+      },
+      "memory_usage": {
+        "rss_mb": 77.51171875,
+        "vms_mb": 33035.984375,
+        "acceptable": true
+      },
+      "cpu_usage": {},
+      "issues": [],
+      "status": "healthy"
+    },
+    "documentation": {
+      "readme_exists": true,
+      "api_docs": true,
+      "deployment_guide": false,
+      "maintenance_guide": true,
+      "missing_docs": [
+        "DEPLOYMENT.md"
+      ],
+      "status": "warning"
+    }
+  },
+  "critical_issues": [
+    "frontend_integration: Frontend server returned 500"
+  ],
+  "warnings": [],
+  "recommendations": [
+    "CRITICAL: Fix all critical issues before deployment",
+    "Complete missing documentation"
+  ],
+  "overall_status": "critical"
+}

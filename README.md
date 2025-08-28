@@ -1,497 +1,294 @@
 # Melbourne Celebrant Portal
-## Professional Wedding Management Platform
 
-[![Backend Status](https://img.shields.io/badge/Backend-Live-brightgreen)](https://amelbournecelebrant-6ykh.onrender.com)
-[![API Docs](https://img.shields.io/badge/API%20Docs-Available-blue)](https://amelbournecelebrant-6ykh.onrender.com/docs)
-[![Version](https://img.shields.io/badge/Version-2.0.0-orange)](https://github.com/A1anMc/amelbournecelebrant)
+A professional web application for wedding celebrants to manage couples, ceremonies, and business operations. Built with modern technologies and designed for deployment on Render.
 
-A comprehensive digital platform designed specifically for professional wedding celebrants to manage couples, ceremonies, legal documentation, and business operations efficiently.
-
----
-
-## 🚀 **Live Demo**
-
-- **Backend API:** [https://amelbournecelebrant-6ykh.onrender.com](https://amelbournecelebrant-6ykh.onrender.com)
-- **API Documentation:** [https://amelbournecelebrant-6ykh.onrender.com/docs](https://amelbournecelebrant-6ykh.onrender.com/docs)
-- **Admin Login:** `admin@melbournecelebrant.com` / `admin123`
-
----
-
-## 📋 **Table of Contents**
-
-- [Features](#features)
-- [Tech Stack](#tech-stack)
-- [Project Structure](#project-structure)
-- [Quick Start](#quick-start)
-- [Backend Setup](#backend-setup)
-- [Frontend Setup](#frontend-setup)
-- [Deployment](#deployment)
-- [API Documentation](#api-documentation)
-- [Contributing](#contributing)
-- [License](#license)
-
----
-
-## ✨ **Features**
-
-### 🎯 **Core Functionality**
-- **Couple Management** - Complete CRM for wedding couples
-- **Ceremony Planning** - Timeline and venue management
-- **Legal Forms** - Automated NOIM and certificate generation
-- **Dashboard Analytics** - Business insights and reporting
-- **Document Management** - Secure file storage and sharing
-- **Calendar Integration** - Schedule and timeline management
-
-### 🔐 **Security & Privacy**
-- **JWT Authentication** - Secure user sessions
-- **Role-based Access** - Admin and user permissions
-- **Data Encryption** - All sensitive data encrypted
-- **GDPR Compliant** - Privacy-first design
-- **Audit Logging** - Complete activity tracking
-
-### 📱 **User Experience**
-- **Responsive Design** - Works on all devices
-- **Modern UI/UX** - Clean, professional interface
-- **Real-time Updates** - Live data synchronization
-- **Offline Capability** - Works without internet
-- **Multi-language** - Internationalization ready
-
----
-
-## 🛠️ **Tech Stack**
-
-### **Backend**
-- **Framework:** FastAPI 0.95.0
-- **Database:** PostgreSQL with SQLAlchemy 1.4.53
-- **Authentication:** JWT with PyJWT 2.6.0
-- **Deployment:** Render.com
-- **Documentation:** Swagger/OpenAPI
-
-### **Frontend**
-- **Framework:** Next.js 14.2.18
-- **Language:** TypeScript
-- **Styling:** Tailwind CSS 3.4.0
-- **State Management:** React Query
-- **Forms:** React Hook Form with Zod validation
-- **Deployment:** Vercel (Ready)
-
-### **Development Tools**
-- **Version Control:** Git
-- **Package Management:** npm/pip
-- **Code Quality:** ESLint, Prettier
-- **Testing:** Jest, Pytest (Ready)
-- **CI/CD:** GitHub Actions (Ready)
-
----
-
-## 📁 **Project Structure**
+## 🏗️ Project Structure
 
 ```
 melbourne-celebrant-portal/
-├── backend/                          # FastAPI Backend
+├── backend/                 # FastAPI backend
 │   ├── app/
-│   │   ├── api/                     # API Routes
-│   │   │   ├── auth.py              # Authentication endpoints
-│   │   │   ├── couples.py           # Couple management
-│   │   │   ├── dashboard.py         # Dashboard data
-│   │   │   └── legal_forms.py       # Legal document generation
-│   │   ├── auth/                    # Authentication logic
-│   │   ├── models/                  # Database models
-│   │   ├── schemas/                 # Pydantic schemas
-│   │   ├── database.py              # Database connection
-│   │   ├── config.py                # Configuration
-│   │   └── main.py                  # FastAPI application
-│   ├── requirements.txt             # Python dependencies
-│   └── Procfile                     # Deployment configuration
-├── frontend/                        # Next.js Frontend
+│   │   ├── api/v1/         # API version 1 endpoints
+│   │   ├── core/           # Core configuration and utilities
+│   │   ├── models/         # Database models
+│   │   ├── schemas/        # Pydantic schemas
+│   │   ├── services/       # Business logic services
+│   │   └── main.py         # FastAPI application
+│   ├── tests/              # Backend tests
+│   ├── alembic/            # Database migrations
+│   ├── requirements.txt    # Python dependencies
+│   └── Dockerfile          # Backend container
+├── frontend/               # Next.js frontend
 │   ├── src/
-│   │   ├── app/                     # Next.js 14 App Router
-│   │   ├── components/              # React components
-│   │   ├── contexts/                # React contexts
-│   │   ├── lib/                     # Utilities
-│   │   ├── services/                # API services
-│   │   └── types/                   # TypeScript types
-│   ├── public/                      # Static assets
-│   ├── package.json                 # Node dependencies
-│   ├── next.config.js               # Next.js configuration
-│   ├── tailwind.config.js           # Tailwind CSS config
-│   └── tsconfig.json                # TypeScript config
-├── docs/                            # Documentation
-│   ├── welcome-guide.md             # User manual
-│   ├── marketing-launch-checklist.md # Marketing strategy
-│   └── onboarding-email-template.html # Email templates
-├── .env.example                     # Environment variables template
-├── .gitignore                       # Git ignore rules
-├── README.md                        # This file
-└── LICENSE                          # MIT License
+│   │   ├── app/           # Next.js 14 App Router pages
+│   │   ├── components/    # React components
+│   │   ├── hooks/         # Custom React hooks
+│   │   ├── lib/           # Utility functions and API client
+│   │   ├── types/         # TypeScript type definitions
+│   │   └── utils/         # Helper functions
+│   ├── tests/             # Frontend tests
+│   ├── package.json       # Node.js dependencies
+│   └── Dockerfile         # Frontend container
+├── shared/                # Shared types and utilities
+├── docker-compose.yml     # Local development setup
+└── README.md             # This file
 ```
 
----
+## 🌟 Features
 
-## 🚀 **Quick Start**
+- **Professional Dashboard** - Overview of your ceremonies and business metrics
+- **Couple Management** - Track wedding couples from inquiry to completion
+- **Ceremony Templates** - Manage ceremony scripts and templates (coming soon)
+- **Invoice Management** - Handle billing and payments (coming soon)
+- **Responsive Design** - Works perfectly on desktop and mobile devices
+- **Professional UI** - Gold and black theme with elegant typography
 
-### **Prerequisites**
-- Python 3.11+
-- Node.js 18+
-- PostgreSQL (for production)
-- Git
+## 🚀 Tech Stack
 
-### **1. Clone Repository**
+### Backend
+- **FastAPI** - Modern, fast web framework for building APIs
+- **SQLAlchemy** - SQL toolkit and ORM
+- **PostgreSQL** - Production database (SQLite for development)
+- **JWT Authentication** - Secure token-based authentication
+- **Pydantic** - Data validation using Python type annotations
+- **Alembic** - Database migration system
+
+### Frontend
+- **Next.js 14** - React framework with App Router
+- **TypeScript** - Type-safe JavaScript
+- **Tailwind CSS** - Utility-first CSS framework
+- **Lucide React** - Beautiful icon library
+- **Axios** - HTTP client for API calls
+
+## 🛠️ Quick Start
+
+### Prerequisites
+- Docker and Docker Compose
+- Node.js 18+ (for local development)
+- Python 3.11+ (for local development)
+
+### Using Docker (Recommended)
+
+1. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   cd melbourne-celebrant-portal
+   ```
+
+2. **Start all services**
+   ```bash
+   docker-compose up -d
+   ```
+
+3. **Access the application**
+   - Frontend: http://localhost:3000
+   - Backend API: http://localhost:8000
+   - API Documentation: http://localhost:8000/docs
+
+### Local Development
+
+#### Backend Setup
+
+1. **Navigate to backend directory**
+   ```bash
+   cd backend
+   ```
+
+2. **Create virtual environment**
+   ```bash
+   python -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   ```
+
+3. **Install dependencies**
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+4. **Set up environment variables**
+   ```bash
+   cp ../frontend/env.example .env
+   # Edit .env with your configuration
+   ```
+
+5. **Start the development server**
+   ```bash
+   uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+   ```
+
+#### Frontend Setup
+
+1. **Navigate to frontend directory**
+   ```bash
+   cd frontend
+   ```
+
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
+
+3. **Set up environment variables**
+   ```bash
+   cp env.example .env.local
+   # Edit .env.local with your configuration
+   ```
+
+4. **Start the development server**
+   ```bash
+   npm run dev
+   ```
+
+## 🧪 Testing
+
+### Backend Tests
 ```bash
-git clone https://github.com/A1anMc/amelbournecelebrant.git
-cd amelbournecelebrant
+cd backend
+pytest
 ```
 
-### **2. Backend Setup**
-```bash
-# Navigate to backend
-cd celebrant-portal-v2/backend
-
-# Create virtual environment
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Set environment variables
-cp .env.example .env
-# Edit .env with your configuration
-
-# Run development server
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
-```
-
-### **3. Frontend Setup**
-```bash
-# Navigate to frontend (in new terminal)
-cd frontend
-
-# Install dependencies
-npm install
-
-# Set environment variables
-cp .env.example .env.local
-# Edit .env.local with your API URL
-
-# Run development server
-npm run dev
-```
-
-### **4. Access Application**
-- **Frontend:** http://localhost:3000
-- **Backend API:** http://localhost:8000
-- **API Docs:** http://localhost:8000/docs
-
----
-
-## 🗄️ **Backend Setup**
-
-### **Environment Variables**
-Create `.env` file in backend directory:
-
-```env
-# Application
-ENVIRONMENT=development
-DEBUG=true
-SECRET_KEY=your-secret-key-here
-ACCESS_TOKEN_EXPIRE_MINUTES=60
-REFRESH_TOKEN_EXPIRE_DAYS=30
-
-# Database
-DATABASE_URL=postgresql://user:password@localhost:5432/celebrant_portal
-# For development, you can use SQLite:
-# DATABASE_URL=sqlite:///./celebrant_portal.db
-
-# CORS
-ALLOWED_ORIGINS=http://localhost:3000,https://yourdomain.com
-```
-
-### **Database Setup**
-
-#### **PostgreSQL (Production)**
-```bash
-# Install PostgreSQL
-# macOS
-brew install postgresql
-brew services start postgresql
-
-# Ubuntu
-sudo apt-get install postgresql postgresql-contrib
-
-# Create database
-createdb celebrant_portal
-```
-
-#### **SQLite (Development)**
-```bash
-# SQLite database will be created automatically
-# No additional setup required
-```
-
-### **Run Backend**
-```bash
-cd celebrant-portal-v2/backend
-source venv/bin/activate
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
-```
-
----
-
-## 🎨 **Frontend Setup**
-
-### **Environment Variables**
-Create `.env.local` file in frontend directory:
-
-```env
-NEXT_PUBLIC_API_URL=http://localhost:8000
-```
-
-### **Development**
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-### **Production Build**
-```bash
-npm run build
-npm start
-```
-
-### **Available Scripts**
-- `npm run dev` - Start development server
-- `npm run build` - Build for production
-- `npm run start` - Start production server
-- `npm run lint` - Run ESLint
-- `npm run type-check` - Run TypeScript check
-
----
-
-## 🚀 **Deployment**
-
-### **Backend Deployment (Render.com)**
-
-1. **Create Render Account** and connect GitHub
-2. **Create Web Service** with these settings:
-   - **Build Command:** `pip install -r requirements.txt`
-   - **Start Command:** `uvicorn main:app --host 0.0.0.0 --port $PORT`
-   - **Environment:** Set all required environment variables
-
-3. **Database Setup:**
-   - Create PostgreSQL database on Render
-   - Update `DATABASE_URL` environment variable
-
-### **Frontend Deployment (Vercel)**
-
-1. **Connect GitHub** to Vercel
-2. **Import Project** and configure:
-   - **Framework:** Next.js
-   - **Build Command:** `npm run build`
-   - **Install Command:** `npm install`
-
-3. **Environment Variables:**
-   - Set `NEXT_PUBLIC_API_URL` to your backend URL
-
-### **Alternative Deployment Options**
-
-#### **Docker Deployment**
-```bash
-# Build and run with Docker
-docker build -t celebrant-portal-backend ./backend
-docker build -t celebrant-portal-frontend ./frontend
-
-docker run -p 8000:8000 celebrant-portal-backend
-docker run -p 3000:3000 celebrant-portal-frontend
-```
-
-#### **Traditional VPS Deployment**
-- Use nginx as reverse proxy
-- Set up SSL certificates with Let's Encrypt
-- Configure systemd services for auto-restart
-
----
-
-## 📚 **API Documentation**
-
-### **Authentication Endpoints**
-```http
-POST /api/auth/login          # User login
-POST /api/auth/register       # User registration
-GET  /api/auth/me            # Get current user
-PUT  /api/auth/me            # Update user profile
-POST /api/auth/change-password # Change password
-POST /api/auth/refresh       # Refresh token
-POST /api/auth/logout        # User logout
-```
-
-### **Couple Management**
-```http
-GET    /api/couples/         # List couples (with search/pagination)
-POST   /api/couples/         # Create new couple
-GET    /api/couples/{id}     # Get couple details
-PUT    /api/couples/{id}     # Update couple
-DELETE /api/couples/{id}     # Delete couple
-```
-
-### **Dashboard**
-```http
-GET /api/dashboard/stats     # Get dashboard statistics
-GET /api/dashboard/recent    # Get recent activity
-```
-
-### **Legal Forms**
-```http
-GET    /api/legal-forms/     # List forms
-POST   /api/legal-forms/     # Generate new form
-GET    /api/legal-forms/{id} # Get form details
-PUT    /api/legal-forms/{id} # Update form
-DELETE /api/legal-forms/{id} # Delete form
-```
-
-### **Interactive API Documentation**
-- **Swagger UI:** `/docs`
-- **ReDoc:** `/redoc`
-- **OpenAPI JSON:** `/openapi.json`
-
----
-
-## 🧪 **Testing**
-
-### **Backend Tests**
-```bash
-cd celebrant-portal-v2/backend
-pytest tests/ -v
-pytest --cov=app tests/  # With coverage
-```
-
-### **Frontend Tests**
+### Frontend Tests
 ```bash
 cd frontend
 npm test
-npm run test:coverage
 ```
 
-### **E2E Tests**
+## 📊 Database
+
+### Migrations
+The project uses Alembic for database migrations:
+
 ```bash
-# Install Playwright
-npm install -g @playwright/test
-npx playwright install
-
-# Run E2E tests
-npm run test:e2e
-```
-
----
-
-## 🔧 **Development**
-
-### **Code Quality**
-```bash
-# Backend
-black app/                    # Format Python code
-flake8 app/                   # Lint Python code
-mypy app/                     # Type checking
-
-# Frontend
-npm run lint                  # ESLint
-npm run format               # Prettier
-npm run type-check           # TypeScript
-```
-
-### **Database Migrations**
-```bash
-# Create migration
-alembic revision --autogenerate -m "Description"
-
-# Apply migrations
+cd backend
+alembic revision --autogenerate -m "Description of changes"
 alembic upgrade head
-
-# Rollback migration
-alembic downgrade -1
 ```
 
-### **Adding New Features**
+### Seeding Data
+```bash
+cd backend
+python init_db.py
+```
 
-1. **Backend API Endpoint:**
-   - Add route in `app/api/`
-   - Create/update models in `app/models/`
-   - Add schemas in `app/schemas/`
-   - Write tests in `tests/`
+## 🚀 Deployment
 
-2. **Frontend Component:**
-   - Create component in `src/components/`
-   - Add types in `src/types/`
-   - Create service in `src/services/`
-   - Add tests in `__tests__/`
+### Backend Deployment (Render)
+
+1. **Create a new Web Service on Render**
+2. **Connect your GitHub repository**
+3. **Configure the service:**
+   - **Build Command**: `pip install -r requirements.txt`
+   - **Start Command**: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
+   - **Root Directory**: `backend`
+
+4. **Add environment variables:**
+   - `DATABASE_URL`: Your PostgreSQL connection string
+   - `SECRET_KEY`: A secure secret key
+   - `DEBUG`: `false`
+   - `ALLOWED_ORIGINS`: Your frontend domain
+
+### Frontend Deployment (Vercel)
+
+1. **Connect your GitHub repository to Vercel**
+2. **Configure the project:**
+   - **Framework Preset**: Next.js
+   - **Root Directory**: `frontend`
+   - **Build Command**: `npm run build`
+   - **Output Directory**: `.next`
+
+3. **Add environment variables:**
+   - `NEXT_PUBLIC_API_URL`: Your backend API URL
+
+## 🔐 Authentication
+
+The application uses JWT (JSON Web Tokens) for authentication:
+
+- Tokens are stored in HTTP-only cookies
+- Automatic token refresh
+- Protected routes with authentication middleware
+- Secure password hashing with bcrypt
+
+## 📊 API Endpoints
+
+### Authentication
+- `POST /api/v1/auth/register` - Create new account
+- `POST /api/v1/auth/login` - Login
+- `GET /api/v1/auth/me` - Get current user
+- `GET /api/v1/auth/verify` - Verify token
+
+### Couples
+- `GET /api/v1/couples` - List all couples
+- `POST /api/v1/couples` - Create new couple
+- `GET /api/v1/couples/{id}` - Get specific couple
+- `PUT /api/v1/couples/{id}` - Update couple
+- `DELETE /api/v1/couples/{id}` - Delete couple
+
+## 🎨 Design System
+
+The application uses a professional design system:
+
+### Colors
+- **Primary Gold**: `#d4af37` - Main brand color
+- **Secondary Dark**: `#1a1a1a` - Text and accents
+- **Background**: `#fefdf8` - Warm white background
+- **Accent Orange**: `#f17544` - Call-to-action elements
+
+### Typography
+- **Headings**: Playfair Display (serif)
+- **Body**: Inter (sans-serif)
+- Professional hierarchy and spacing
+
+## 📱 Mobile Responsive
+
+The application is fully responsive and works on:
+- Desktop computers
+- Tablets
+- Mobile phones
+- All modern browsers
+
+## 🔧 Development Tools
+
+### Code Quality
+- **Black**: Python code formatting
+- **isort**: Import sorting
+- **flake8**: Linting
+- **mypy**: Type checking
+- **pre-commit**: Git hooks
+
+### Testing
+- **pytest**: Backend testing
+- **Jest**: Frontend testing
+- **React Testing Library**: Component testing
+
+## 📈 Future Enhancements
+
+- **Ceremony Templates**: Pre-built ceremony scripts
+- **Invoice Management**: Billing and payment tracking
+- **Calendar Integration**: Sync with Google Calendar
+- **Email Notifications**: Automated client communications
+- **Document Generation**: PDF ceremony scripts and contracts
+- **Payment Processing**: Stripe integration
+- **Client Portal**: Couple self-service area
+- **Mobile App**: Native iOS/Android applications
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add tests if applicable
+5. Submit a pull request
+
+## 📄 License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## 📞 Support
+
+For support or questions:
+- Create an issue in the GitHub repository
+- Email: support@celebrantportal.com
 
 ---
 
-## 📖 **Documentation**
-
-- **User Guide:** `docs/welcome-guide.md`
-- **Marketing Strategy:** `docs/marketing-launch-checklist.md`
-- **Email Templates:** `docs/onboarding-email-template.html`
-- **API Reference:** Available at `/docs` endpoint
-- **Architecture:** `ARCHITECTURE.md`
-
----
-
-## 🤝 **Contributing**
-
-1. **Fork the repository**
-2. **Create feature branch:** `git checkout -b feature/amazing-feature`
-3. **Commit changes:** `git commit -m 'Add amazing feature'`
-4. **Push to branch:** `git push origin feature/amazing-feature`
-5. **Open Pull Request**
-
-### **Development Guidelines**
-- Follow existing code style
-- Write tests for new features
-- Update documentation
-- Use conventional commit messages
-- Ensure all tests pass
-
----
-
-## 📄 **License**
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
----
-
-## 🆘 **Support**
-
-- **Email:** support@melbournecelebrant.com
-- **Phone:** 1300 CELEBRANT (1300 235 327)
-- **Documentation:** [help.melbournecelebrant.com](https://help.melbournecelebrant.com)
-- **Issues:** [GitHub Issues](https://github.com/A1anMc/amelbournecelebrant/issues)
-
----
-
-## 🙏 **Acknowledgments**
-
-- Built with ❤️ for the wedding celebrant community
-- Inspired by the need for professional digital tools
-- Thanks to all beta testers and early adopters
-
----
-
-## 📊 **Project Status**
-
-- ✅ **Backend:** Production ready and deployed
-- ✅ **API:** Fully functional with documentation
-- ✅ **Database:** Optimized and secure
-- ✅ **Authentication:** JWT-based security
-- 🚧 **Frontend:** Ready for deployment
-- 🚧 **Testing:** Comprehensive test suite
-- 📋 **Documentation:** Complete user guides
-
-**Current Version:** 2.0.0  
-**Last Updated:** June 26, 2025  
-**Status:** Production Ready
-
----
-
-*Made with ❤️ in Melbourne, Australia*
+**Melbourne Celebrant Portal** - Helping celebrants create beautiful ceremonies with professional tools.

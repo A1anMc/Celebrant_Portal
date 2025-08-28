@@ -1,0 +1,366 @@
+{
+  "timestamp": "2025-08-27T23:01:15.226809",
+  "python_version": "3.11.7 (main, Jun 23 2025, 22:56:41) [Clang 17.0.0 (clang-1700.0.13.5)]",
+  "checks": {
+    "core_fastapi": {
+      "module": "fastapi",
+      "importable": true,
+      "version": "0.109.0",
+      "error": null,
+      "warning": null
+    },
+    "core_uvicorn": {
+      "module": "uvicorn",
+      "importable": true,
+      "version": "0.27.0",
+      "error": null,
+      "warning": null
+    },
+    "core_sqlalchemy": {
+      "module": "sqlalchemy",
+      "importable": true,
+      "version": "2.0.25",
+      "error": null,
+      "warning": null
+    },
+    "core_pydantic": {
+      "module": "pydantic",
+      "importable": true,
+      "version": "2.5.3",
+      "error": null,
+      "warning": null
+    },
+    "core_pydantic_settings": {
+      "module": "pydantic_settings",
+      "importable": true,
+      "version": "2.1.0",
+      "error": null,
+      "warning": null
+    },
+    "core_jose": {
+      "module": "jose",
+      "importable": true,
+      "version": "3.3.0",
+      "error": null,
+      "warning": null
+    },
+    "core_passlib": {
+      "module": "passlib",
+      "importable": true,
+      "version": "1.7.4",
+      "error": null,
+      "warning": null
+    },
+    "core_multipart": {
+      "module": "multipart",
+      "importable": true,
+      "version": "0.0.6",
+      "error": null,
+      "warning": null
+    },
+    "core_email_validator": {
+      "module": "email_validator",
+      "importable": true,
+      "version": "2.1.0",
+      "error": null,
+      "warning": null
+    },
+    "core_dotenv": {
+      "module": "dotenv",
+      "importable": true,
+      "version": null,
+      "error": null,
+      "warning": null
+    },
+    "core_starlette": {
+      "module": "starlette",
+      "importable": true,
+      "version": "0.35.1",
+      "error": null,
+      "warning": null
+    },
+    "core_secure": {
+      "module": "secure",
+      "importable": true,
+      "version": null,
+      "error": null,
+      "warning": null
+    },
+    "core_cryptography": {
+      "module": "cryptography",
+      "importable": true,
+      "version": "42.0.0",
+      "error": null,
+      "warning": null
+    },
+    "core_bcrypt": {
+      "module": "bcrypt",
+      "importable": true,
+      "version": "4.1.2",
+      "error": null,
+      "warning": null
+    },
+    "core_httpx": {
+      "module": "httpx",
+      "importable": true,
+      "version": "0.26.0",
+      "error": null,
+      "warning": null
+    },
+    "core_psycopg2": {
+      "module": "psycopg2",
+      "importable": true,
+      "version": "2.9.9 (dt dec pq3 ext lo64)",
+      "error": null,
+      "warning": null
+    },
+    "core_alembic": {
+      "module": "alembic",
+      "importable": true,
+      "version": "1.13.1",
+      "error": null,
+      "warning": null
+    },
+    "core_gunicorn": {
+      "module": "gunicorn",
+      "importable": true,
+      "version": "21.2.0",
+      "error": null,
+      "warning": null
+    },
+    "dev_pytest": {
+      "module": "pytest",
+      "importable": true,
+      "version": "7.4.4",
+      "error": null,
+      "warning": null
+    },
+    "dev_pytest-asyncio": {
+      "module": "pytest-asyncio",
+      "importable": false,
+      "version": null,
+      "error": "No module named 'pytest-asyncio'",
+      "warning": null
+    },
+    "dev_black": {
+      "module": "black",
+      "importable": true,
+      "version": "23.12.1",
+      "error": null,
+      "warning": null
+    },
+    "dev_isort": {
+      "module": "isort",
+      "importable": true,
+      "version": "5.13.2",
+      "error": null,
+      "warning": null
+    },
+    "dev_flake8": {
+      "module": "flake8",
+      "importable": true,
+      "version": "7.0.0",
+      "error": null,
+      "warning": null
+    },
+    "dev_mypy": {
+      "module": "mypy",
+      "importable": true,
+      "version": null,
+      "error": null,
+      "warning": null
+    },
+    "dev_pre-commit": {
+      "module": "pre-commit",
+      "importable": false,
+      "version": null,
+      "error": "No module named 'pre-commit'",
+      "warning": null
+    }
+  },
+  "warnings": [],
+  "errors": [],
+  "recommendations": [
+    "Run 'pip list --outdated' to check for package updates"
+  ],
+  "python_version_check": {
+    "current": [
+      3,
+      11,
+      7,
+      "final",
+      0
+    ],
+    "version_string": "3.11.7 (main, Jun 23 2025, 22:56:41) [Clang 17.0.0 (clang-1700.0.13.5)]",
+    "is_compatible": true,
+    "recommendations": []
+  },
+  "optional_dependencies": {
+    "redis": {
+      "module": "redis",
+      "importable": true,
+      "version": "5.0.1",
+      "error": null,
+      "warning": null
+    },
+    "websockets": {
+      "module": "websockets",
+      "importable": true,
+      "version": "12.0",
+      "error": null,
+      "warning": null
+    },
+    "structlog": {
+      "module": "structlog",
+      "importable": true,
+      "version": "23.2.0",
+      "error": null,
+      "warning": null
+    }
+  },
+  "security_check": {
+    "status": "secure",
+    "checks": {
+      "cryptography": {
+        "module": "cryptography",
+        "importable": true,
+        "version": "42.0.0",
+        "error": null,
+        "warning": null
+      },
+      "bcrypt": {
+        "module": "bcrypt",
+        "importable": true,
+        "version": "4.1.2",
+        "error": null,
+        "warning": null
+      },
+      "jose": {
+        "module": "jose",
+        "importable": true,
+        "version": "3.3.0",
+        "error": null,
+        "warning": null
+      },
+      "passlib": {
+        "module": "passlib",
+        "importable": true,
+        "version": "1.7.4",
+        "error": null,
+        "warning": null
+      }
+    },
+    "warnings": [],
+    "critical_issues": []
+  },
+  "database_check": {
+    "sqlalchemy": {
+      "module": "sqlalchemy",
+      "importable": true,
+      "version": "2.0.25",
+      "error": null,
+      "warning": null
+    },
+    "psycopg2": {
+      "module": "psycopg2",
+      "importable": true,
+      "version": "2.9.9 (dt dec pq3 ext lo64)",
+      "error": null,
+      "warning": null
+    },
+    "alembic": {
+      "module": "alembic",
+      "importable": true,
+      "version": "1.13.1",
+      "error": null,
+      "warning": null
+    },
+    "status": "working"
+  },
+  "web_framework_check": {
+    "fastapi": {
+      "module": "fastapi",
+      "importable": true,
+      "version": "0.109.0",
+      "error": null,
+      "warning": null
+    },
+    "uvicorn": {
+      "module": "uvicorn",
+      "importable": true,
+      "version": "0.27.0",
+      "error": null,
+      "warning": null
+    },
+    "starlette": {
+      "module": "starlette",
+      "importable": true,
+      "version": "0.35.1",
+      "error": null,
+      "warning": null
+    },
+    "status": "working"
+  },
+  "validation_check": {
+    "pydantic": {
+      "module": "pydantic",
+      "importable": true,
+      "version": "2.5.3",
+      "error": null,
+      "warning": null
+    },
+    "pydantic_settings": {
+      "module": "pydantic_settings",
+      "importable": true,
+      "version": "2.1.0",
+      "error": null,
+      "warning": null
+    },
+    "email_validator": {
+      "module": "email_validator",
+      "importable": true,
+      "version": "2.1.0",
+      "error": null,
+      "warning": null
+    },
+    "status": "working"
+  },
+  "authentication_check": {
+    "python_jose": {
+      "module": "jose",
+      "importable": true,
+      "version": "3.3.0",
+      "error": null,
+      "warning": null
+    },
+    "passlib": {
+      "module": "passlib",
+      "importable": true,
+      "version": "1.7.4",
+      "error": null,
+      "warning": null
+    },
+    "bcrypt": {
+      "module": "bcrypt",
+      "importable": true,
+      "version": "4.1.2",
+      "error": null,
+      "warning": null
+    },
+    "cryptography": {
+      "module": "cryptography",
+      "importable": true,
+      "version": "42.0.0",
+      "error": null,
+      "warning": null
+    },
+    "status": "working"
+  },
+  "summary": {
+    "total_checks": 25,
+    "successful_checks": 23,
+    "failed_checks": 2,
+    "success_rate": 92.0,
+    "overall_status": "issues_detected"
+  }
+}

@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Invoice {{ invoice_number }}</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 2cm;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+      line-height: 1.5;
+      color: #1a1a1a;
+      margin: 0;
+      padding: 0;
+    }
+    .header {
+      background-color: #E6D1E6;
+      padding: 2rem;
+      margin-bottom: 2rem;
+    }
+    .couples-name {
+      font-size: 2.5rem;
+      font-weight: bold;
+      color: #1a1a1a;
+      margin: 0;
+      padding: 0;
+    }
+    .header-details {
+      margin-top: 1rem;
+    }
+    .header-details p {
+      margin: 0.25rem 0;
+      color: #1a1a1a;
+    }
+    .invoice-number {
+      position: absolute;
+      top: 2rem;
+      right: 2rem;
+      font-size: 1.2rem;
+    }
+    .content {
+      padding: 0 2rem;
+    }
+    .statement {
+      margin-bottom: 2rem;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 2rem 0;
+    }
+    th, td {
+      border: 1px solid #1a1a1a;
+      padding: 0.75rem;
+    }
+    th {
+      text-align: left;
+      font-weight: bold;
+    }
+    .fees-column {
+      text-align: right;
+    }
+    .remaining-balance {
+      font-style: italic;
+    }
+    .payment-section {
+      margin-top: 2rem;
+    }
+    .payment-section h3 {
+      margin-bottom: 0.5rem;
+    }
+    .payment-details p {
+      margin: 0.25rem 0;
+    }
+    .footer {
+      background-color: #E6D1E6;
+      padding: 2rem;
+      margin-top: 2rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    .logo {
+      width: 100px;
+      height: 100px;
+    }
+    .footer-text {
+      flex-grow: 1;
+    }
+    .footer-text h2 {
+      margin: 0;
+      font-size: 1.5rem;
+      text-transform: uppercase;
+    }
+    .footer-text p {
+      margin: 0.25rem 0;
+    }
+    .thank-you {
+      text-align: right;
+      font-size: 1.5rem;
+      margin-top: 2rem;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1 class="couples-name">{{ couple.partner1_name }} & {{ couple.partner2_name }}</h1>
+    <div class="header-details">
+      <p>Date: {{ invoice_date }}</p>
+      <p>Invoice Ref: {{ invoice_ref }}</p>
+    </div>
+    <div class="invoice-number">Invoice #{{ invoice_number }}</div>
+  </div>
+
+  <div class="content">
+    <div class="statement">
+      <p>Statement of fees payable in respect of marriage of:</p>
+      <p><strong>{{ couple.partner1_name }} & {{ couple.partner2_name }}</strong> on {{ ceremony_date }}</p>
+      <p>at {{ venue }}</p>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Item #</th>
+          <th>Description</th>
+          <th>Fees</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>1</td>
+          <td>{{ settings.defaultItems.deposit }}</td>
+          <td class="fees-column">{{ deposit_amount }}</td>
+        </tr>
+        <tr>
+          <td colspan="2" class="remaining-balance">Remaining Balance</td>
+          <td class="fees-column">{{ remaining_balance }}</td>
+        </tr>
+        <tr>
+          <td>2</td>
+          <td>{{ settings.defaultItems.solemnisation }}</td>
+          <td class="fees-column">{{ solemnisation_fee }}</td>
+        </tr>
+        <tr>
+          <td>3</td>
+          <td>{{ settings.defaultItems.mcServices }}</td>
+          <td class="fees-column">{{ mc_services_fee }}</td>
+        </tr>
+        <tr>
+          <td>4</td>
+          <td>{{ settings.defaultItems.travel }}</td>
+          <td class="fees-column">{{ travel_fee }}</td>
+        </tr>
+        <tr>
+          <td>5</td>
+          <td>{{ settings.defaultItems.bdmCertificate }}</td>
+          <td class="fees-column">$64</td>
+        </tr>
+        <tr>
+          <td colspan="2" class="text-right">GST</td>
+          <td class="fees-column">$0</td>
+        </tr>
+        <tr>
+          <td colspan="2" class="text-right">Total</td>
+          <td class="fees-column">{{ total }}</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="payment-section">
+      <h3>{{ settings.paymentInstructions.title }}</h3>
+      <div class="payment-details">
+        <p>{{ settings.paymentInstructions.transferInstructions }}</p>
+        <p>Acc Name: Alan McCarthy</p>
+        <p>BSB: {{ bsb }}</p>
+        <p>Acc No: {{ account_number }}</p>
+        <p>{{ settings.paymentInstructions.referenceInstructions }}</p>
+      </div>
+    </div>
+
+    <div class="thank-you">Thank you!</div>
+  </div>
+
+  <div class="footer">
+    <img src="{{ logo_url }}" alt="A Melbourne Celebrant Logo" class="logo">
+    <div class="footer-text">
+      <h2>{{ settings.footer.businessName }}</h2>
+      <p>Alan McCarthy (ABN: {{ abn }})</p>
+      <p>{{ settings.footer.title }}</p>
+      <p>{{ settings.footer.address }}</p>
+      <p>PH: {{ phone }} | {{ settings.footer.email }}</p>
+    </div>
+  </div>
+</body>
+</html> 
