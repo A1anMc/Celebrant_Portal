@@ -24,6 +24,76 @@ export const useWebSocket = (): WebSocketHook => {
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const pingIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
+  const handleNotification = useCallback((message: WebSocketMessage) => {
+    const { notification_type, data } = message;
+    
+    // Create browser notification
+    if ('Notification' in window && Notification.permission === 'granted') {
+      new Notification('Melbourne Celebrant Portal', {
+        body: data.message,
+        icon: '/favicon.ico',
+        tag: notification_type
+      });
+    }
+
+    // You can also dispatch a custom event for components to listen to
+    window.dispatchEvent(new CustomEvent('websocket-notification', {
+      detail: { type: notification_type, data }
+    }));
+  }, []);
+
+  const handleDashboardUpdate = useCallback((message: WebSocketMessage) => {
+    // Dispatch event for dashboard components to update
+    window.dispatchEvent(new CustomEvent('dashboard-update', {
+      detail: message.data
+    }));
+  }, []);
+
+  const handleCoupleUpdate = useCallback((message: WebSocketMessage) => {
+    // Dispatch event for couple components to update
+    window.dispatchEvent(new CustomEvent('couple-update', {
+      detail: { couple_id: message.couple_id, data: message.data }
+    }));
+  }, []);
+
+  const handleInvoiceUpdate = useCallback((message: WebSocketMessage) => {
+    // Dispatch event for invoice components to update
+    window.dispatchEvent(new CustomEvent('invoice-update', {
+      detail: { invoice_id: message.invoice_id, data: message.data }
+    }));
+  }, []);
+
+  const handleMessage = useCallback((message: WebSocketMessage) => {
+    switch (message.type) {
+      case 'notification':
+        handleNotification(message);
+        break;
+      case 'dashboard_update':
+        handleDashboardUpdate(message);
+        break;
+      case 'couple_update':
+        handleCoupleUpdate(message);
+        break;
+      case 'invoice_update':
+        handleInvoiceUpdate(message);
+        break;
+      case 'pong':
+        // Handle pong response
+        break;
+      case 'subscription_confirmed':
+        console.log('Subscription confirmed:', message);
+        break;
+      case 'unsubscription_confirmed':
+        console.log('Unsubscription confirmed:', message);
+        break;
+      case 'error':
+        console.error('WebSocket error message:', message.message);
+        break;
+      default:
+        console.log('Unknown message type:', message.type);
+    }
+  }, [handleNotification, handleDashboardUpdate, handleCoupleUpdate, handleInvoiceUpdate]);
+
   const connect = useCallback(() => {
     if (!user) return;
 
@@ -88,7 +158,7 @@ export const useWebSocket = (): WebSocketHook => {
       setError('Failed to create WebSocket connection');
       console.error('WebSocket connection error:', err);
     }
-  }, [user]);
+  }, [user, handleMessage]);
 
   const disconnect = useCallback(() => {
     if (wsRef.current) {
@@ -132,76 +202,6 @@ export const useWebSocket = (): WebSocketHook => {
       subscription_id: id
     });
   }, [sendMessage]);
-
-  const handleMessage = useCallback((message: WebSocketMessage) => {
-    switch (message.type) {
-      case 'notification':
-        handleNotification(message);
-        break;
-      case 'dashboard_update':
-        handleDashboardUpdate(message);
-        break;
-      case 'couple_update':
-        handleCoupleUpdate(message);
-        break;
-      case 'invoice_update':
-        handleInvoiceUpdate(message);
-        break;
-      case 'pong':
-        // Handle pong response
-        break;
-      case 'subscription_confirmed':
-        console.log('Subscription confirmed:', message);
-        break;
-      case 'unsubscription_confirmed':
-        console.log('Unsubscription confirmed:', message);
-        break;
-      case 'error':
-        console.error('WebSocket error message:', message.message);
-        break;
-      default:
-        console.log('Unknown message type:', message.type);
-    }
-  }, []);
-
-  const handleNotification = useCallback((message: WebSocketMessage) => {
-    const { notification_type, data } = message;
-    
-    // Create browser notification
-    if ('Notification' in window && Notification.permission === 'granted') {
-      new Notification('Melbourne Celebrant Portal', {
-        body: data.message,
-        icon: '/favicon.ico',
-        tag: notification_type
-      });
-    }
-
-    // You can also dispatch a custom event for components to listen to
-    window.dispatchEvent(new CustomEvent('websocket-notification', {
-      detail: { type: notification_type, data }
-    }));
-  }, []);
-
-  const handleDashboardUpdate = useCallback((message: WebSocketMessage) => {
-    // Dispatch event for dashboard components to update
-    window.dispatchEvent(new CustomEvent('dashboard-update', {
-      detail: message.data
-    }));
-  }, []);
-
-  const handleCoupleUpdate = useCallback((message: WebSocketMessage) => {
-    // Dispatch event for couple components to update
-    window.dispatchEvent(new CustomEvent('couple-update', {
-      detail: { couple_id: message.couple_id, data: message.data }
-    }));
-  }, []);
-
-  const handleInvoiceUpdate = useCallback((message: WebSocketMessage) => {
-    // Dispatch event for invoice components to update
-    window.dispatchEvent(new CustomEvent('invoice-update', {
-      detail: { invoice_id: message.invoice_id, data: message.data }
-    }));
-  }, []);
 
   // Connect on mount and when user changes
   useEffect(() => {
