@@ -1,4 +1,4 @@
-# Ignore everything except what Vercel needs
+# Ignore backend and other non-frontend files
 backend/
 *.md
 .git/
@@ -10,3 +10,4 @@ shared/
 *.log
 .env*
 !.env.example
+# Keep frontend directory - DO NOT ignore it!
