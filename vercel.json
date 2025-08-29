@@ -1,5 +1,6 @@
 {
   "version": 2,
   "framework": "nextjs",
-  "rootDirectory": "frontend"
+  "buildCommand": "./build.sh",
+  "outputDirectory": "frontend/.next"
 } 
