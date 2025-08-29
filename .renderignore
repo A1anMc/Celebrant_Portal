@@ -1,0 +1,26 @@
+# Ignore frontend files for Render backend deployment
+src/
+public/
+package.json
+package-lock.json
+next.config.js
+tailwind.config.ts
+tsconfig.json
+jest.config.js
+.eslintrc.json
+next-env.d.ts
+env.example
+node_modules/
+.next/
+*.md
+!backend/*.md
+.git/
+.github/
+shared/
+*.db
+*.sqlite
+*.log
+.env*
+!.env.example
+vercel.json
+.vercelignore
