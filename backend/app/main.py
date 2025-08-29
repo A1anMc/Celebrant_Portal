@@ -141,7 +141,8 @@ async def health_check():
     db_status = "unknown"
     try:
         with engine.connect() as conn:
-            conn.execute("SELECT 1")
+            from sqlalchemy import text
+            conn.execute(text("SELECT 1"))
             db_status = "connected"
     except Exception as e:
         db_status = f"error: {str(e)}"
