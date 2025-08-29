@@ -10,4 +10,4 @@ shared/
 *.log
 .env*
 !.env.example
-# Keep frontend directory - DO NOT ignore it!
+# Keep all frontend files at root level
