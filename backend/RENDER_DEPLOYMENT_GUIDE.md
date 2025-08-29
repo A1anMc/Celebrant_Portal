@@ -57,14 +57,8 @@ ENVIRONMENT=production
 #### **Deploy to Vercel**
 1. Go to [Vercel](https://vercel.com)
 2. Import your GitHub repository
-3. Configure build settings:
-
-```bash
-Framework Preset: Next.js
-Build Command: npm run build
-Output Directory: .next
-Install Command: npm install
-```
+3. **Configuration is automatic** - Vercel detects frontend directory via vercel.json
+4. **No manual build settings needed** - Everything is configured automatically
 
 #### **Environment Variables**
 Add these in Vercel dashboard:

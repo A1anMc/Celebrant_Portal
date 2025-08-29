@@ -194,9 +194,9 @@ python init_db.py
 1. **Connect your GitHub repository to Vercel**
 2. **Configure the project:**
    - **Framework Preset**: Next.js
-   - **Root Directory**: `frontend`
-   - **Build Command**: `npm run build`
-   - **Output Directory**: `.next`
+   - **Root Directory**: `frontend` (automatically detected via vercel.json)
+   - **Build Command**: `npm run build` (automatic)
+   - **Output Directory**: `.next` (automatic)
 
 3. **Add environment variables:**
    - `NEXT_PUBLIC_API_URL`: Your backend API URL

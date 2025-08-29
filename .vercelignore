@@ -1,6 +1,12 @@
-# Ignore everything except frontend
-*
-!frontend/
-!frontend/**
-!vercel.json
-!package.json
+# Ignore everything except what Vercel needs
+backend/
+*.md
+.git/
+.github/
+scripts/
+shared/
+*.db
+*.sqlite
+*.log
+.env*
+!.env.example
