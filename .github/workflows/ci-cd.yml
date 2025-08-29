@@ -51,14 +51,10 @@ jobs:
         node-version: ${{ env.NODE_VERSION }}
 
     - name: Install frontend dependencies
-      run: |
-        cd frontend
-        npm install
+      run: npm install
 
     - name: Test frontend build
-      run: |
-        cd frontend
-        npm run build
+      run: npm run build
 
   # Notify on Failure
   notify-failure:
