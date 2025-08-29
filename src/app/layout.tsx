@@ -7,16 +7,7 @@ const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
   title: 'Melbourne Celebrant Portal',
-  description: 'Professional wedding celebrant management system',
-  icons: {
-    icon: [
-      {
-        url: '/favicon.ico',
-        sizes: '32x32',
-        type: 'image/x-icon',
-      }
-    ]
-  }
+  description: 'Professional wedding celebrant management system'
 }
 
 export default function RootLayout({
@@ -32,7 +23,11 @@ export default function RootLayout({
           href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💍</text></svg>"
         />
       </head>
-      <body>{children}</body>
+      <body className={inter.className}>
+        <AuthProvider>
+          {children}
+        </AuthProvider>
+      </body>
     </html>
   )
 } 
