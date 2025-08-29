@@ -13,10 +13,12 @@ def get_allowed_origins() -> List[str]:
     if env_origins:
         return [origin.strip() for origin in env_origins.split(",") if origin.strip()]
     
-    # Fallback to defaults
+    # Fallback to defaults - include current Vercel domain
     return [
         "http://localhost:3000",
-        "https://celebrant-portal-ah8ssgciz-alans-projects-baf4c067.vercel.app"
+        "https://celebrant-portal-ah8ssgciz-alans-projects-baf4c067.vercel.app",
+        "https://celebrant-portal-g5rrxam67-alans-projects-baf4c067.vercel.app",
+        "https://*.vercel.app"  # Allow all Vercel subdomains
     ]
 
 class Settings(BaseSettings):
