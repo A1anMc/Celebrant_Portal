@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { fetchDashboardData, addNote } from '@/lib/api';
 import { unstable_noStore as noStore } from 'next/cache';
+import ProtectedRoute from '@/components/ProtectedRoute';
 
 interface DashboardData {
   quickStats: {
@@ -67,16 +68,17 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
-      {/* Welcome Section */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-semibold">
-          👋 Welcome Back, {user?.full_name || 'Celebrant'}
-        </h1>
-        <p className="text-gray-600 mt-2">
-          Here&apos;s what&apos;s happening in your celebrant business
-        </p>
-      </div>
+    <ProtectedRoute>
+      <div className="p-6 max-w-7xl mx-auto">
+        {/* Welcome Section */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-semibold">
+            👋 Welcome Back, {user?.full_name || 'Celebrant'}
+          </h1>
+          <p className="text-gray-600 mt-2">
+            Here&apos;s what&apos;s happening in your celebrant business
+          </p>
+        </div>
 
       {/* Quick Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
@@ -223,5 +225,6 @@ export default function DashboardPage() {
         </div>
       </div>
     </div>
+    </ProtectedRoute>
   );
 } 
