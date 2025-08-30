@@ -81,17 +81,15 @@ export const useWebSocket = (): WebSocketHook => {
         // Handle pong response
         break;
       case 'subscription_confirmed':
-        console.log('Subscription confirmed:', message);
         break;
       case 'unsubscription_confirmed':
-        console.log('Unsubscription confirmed:', message);
         break;
       case 'error':
         console.error('WebSocket error message:', message.message);
         break;
       default:
-        console.log('Unknown message type:', message.type);
-    }
+        // console.log('Unknown message type:', message.type); // Removed console.log
+      }
   }, [handleNotification, handleDashboardUpdate, handleCoupleUpdate, handleInvoiceUpdate]);
 
   const connect = useCallback(() => {
@@ -107,7 +105,7 @@ export const useWebSocket = (): WebSocketHook => {
       ws.onopen = () => {
         setIsConnected(true);
         setError(null);
-        console.log('WebSocket connected');
+        // console.log('WebSocket connected'); // Removed console.log
 
         // Start ping interval
         pingIntervalRef.current = setInterval(() => {
@@ -131,7 +129,7 @@ export const useWebSocket = (): WebSocketHook => {
 
       ws.onclose = (event) => {
         setIsConnected(false);
-        console.log('WebSocket disconnected:', event.code, event.reason);
+        // console.log('WebSocket disconnected:', event.code, event.reason); // Removed console.log
 
         // Clear ping interval
         if (pingIntervalRef.current) {
@@ -142,7 +140,7 @@ export const useWebSocket = (): WebSocketHook => {
         // Attempt to reconnect if not a normal closure
         if (event.code !== 1000) {
           reconnectTimeoutRef.current = setTimeout(() => {
-            console.log('Attempting to reconnect...');
+            // console.log('Attempting to reconnect...'); // Removed console.log
             connect();
           }, 5000); // Reconnect after 5 seconds
         }
