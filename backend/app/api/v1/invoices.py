@@ -153,3 +153,28 @@ async def send_invoice_reminder(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except DatabaseException as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+
+@router.get("/summary")
+async def get_invoices_summary(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """Get invoice summary statistics for the dashboard."""
+    try:
+        invoices = await InvoiceService.get_invoices(db, current_user.id, 0, 1000)
+        
+        # Calculate summary statistics
+        total_invoices = len(invoices)
+        total_amount = sum(invoice.total_amount for invoice in invoices if invoice.total_amount)
+        paid_invoices = len([i for i in invoices if i.status == "paid"])
+        pending_invoices = len([i for i in invoices if i.status == "pending"])
+        
+        return {
+            "total_invoices": total_invoices,
+            "total_amount": total_amount,
+            "paid_invoices": paid_invoices,
+            "pending_invoices": pending_invoices,
+            "recent_invoices": invoices[:5]  # Last 5 invoices
+        }
+    except DatabaseException as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))

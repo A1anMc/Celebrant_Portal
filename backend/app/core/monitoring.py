@@ -100,70 +100,99 @@ class MetricsCollector:
 # Global metrics collector
 metrics = MetricsCollector()
 
-class RequestLogger:
-    """Middleware for logging HTTP requests and responses."""
+class APIMonitor:
+    """API monitoring and analytics."""
     
-    @staticmethod
-    async def log_request(request: Request, call_next):
-        """Log incoming request details."""
-        start_time = time.time()
+    def __init__(self):
+        self.request_count = 0
+        self.error_count = 0
+        self.response_times = []
+        self.endpoint_stats = {}
+    
+    def log_request(self, request: Request, response: Response, duration: float):
+        """Log API request details."""
+        self.request_count += 1
+        
+        # Track endpoint statistics
+        endpoint = request.url.path
+        if endpoint not in self.endpoint_stats:
+            self.endpoint_stats[endpoint] = {
+                "count": 0,
+                "errors": 0,
+                "avg_response_time": 0,
+                "total_response_time": 0
+            }
+        
+        self.endpoint_stats[endpoint]["count"] += 1
+        self.endpoint_stats[endpoint]["total_response_time"] += duration
+        
+        # Track response times
+        self.response_times.append(duration)
+        if len(self.response_times) > 1000:  # Keep last 1000 requests
+            self.response_times.pop(0)
         
         # Log request details
-        logger.info(
-            "Request started",
-            method=request.method,
-            url=str(request.url),
-            client_ip=request.client.host if request.client else None,
-            user_agent=request.headers.get("user-agent"),
-            content_length=request.headers.get("content-length"),
-        )
+        log_data = {
+            "event": "api_request",
+            "method": request.method,
+            "path": endpoint,
+            "status_code": response.status_code,
+            "duration_ms": round(duration * 1000, 2),
+            "user_agent": request.headers.get("user-agent", ""),
+            "ip": request.client.host if request.client else "unknown",
+            "timestamp": datetime.utcnow().isoformat()
+        }
         
-        # Record endpoint usage
-        metrics.record_endpoint_usage(str(request.url.path), request.method)
-        metrics.increment("request_count")
+        if response.status_code >= 400:
+            self.error_count += 1
+            self.endpoint_stats[endpoint]["errors"] += 1
+            log_data["level"] = "error"
+        else:
+            log_data["level"] = "info"
         
-        # Process request
+        logger.info("API Request", **log_data)
+    
+    def get_stats(self) -> Dict[str, Any]:
+        """Get current API statistics."""
+        avg_response_time = sum(self.response_times) / len(self.response_times) if self.response_times else 0
+        
+        return {
+            "total_requests": self.request_count,
+            "total_errors": self.error_count,
+            "error_rate": (self.error_count / self.request_count * 100) if self.request_count > 0 else 0,
+            "avg_response_time_ms": round(avg_response_time * 1000, 2),
+            "endpoint_stats": self.endpoint_stats,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+
+# Global API monitor instance
+api_monitor = APIMonitor()
+
+class RequestLogger(BaseHTTPMiddleware):
+    """Middleware to log all requests and track API performance."""
+    
+    async def dispatch(self, request: Request, call_next):
+        start_time = time.time()
+        
+        # Skip logging for health checks
+        if request.url.path == "/health":
+            return await call_next(request)
+        
         try:
             response = await call_next(request)
-            
-            # Calculate response time
-            process_time = time.time() - start_time
-            metrics.increment("response_times", process_time)
-            
-            # Log response details
-            logger.info(
-                "Request completed",
-                method=request.method,
-                url=str(request.url),
-                status_code=response.status_code,
-                process_time=process_time,
-            )
-            
-            # Add response time header
-            response.headers["X-Process-Time"] = str(process_time)
-            
+            duration = time.time() - start_time
+            api_monitor.log_request(request, response, duration)
             return response
-            
         except Exception as e:
-            # Log error details
-            process_time = time.time() - start_time
-            metrics.increment("error_count")
-            
-            logger.error(
-                "Request failed",
-                method=request.method,
-                url=str(request.url),
-                error=str(e),
-                traceback=traceback.format_exc(),
-                process_time=process_time,
-            )
-            
-            # Return error response
-            return JSONResponse(
+            duration = time.time() - start_time
+            # Create a mock response for logging
+            response = Response(
+                content=json.dumps({"detail": "Internal server error"}),
                 status_code=500,
-                content={"detail": "Internal server error"},
-                headers={"X-Process-Time": str(process_time)}
+                media_type="application/json"
             )
+            api_monitor.log_request(request, response, duration)
+            raise
 
 class DatabaseMonitor:
     """Monitor database operations and performance."""
