@@ -21,6 +21,7 @@ def get_allowed_origins() -> List[str]:
         "https://celebrant-portal-do4tbzzmx-alans-projects-baf4c067.vercel.app",
         "https://celebrant-portal-io0yhz9h5-alans-projects-baf4c067.vercel.app",
         "https://celebrant-portal-dkrwa8cm8-alans-projects-baf4c067.vercel.app",
+        "https://celebrant-portal-qh5tb1ldm-alans-projects-baf4c067.vercel.app",
         "https://celebrant-portal-*.vercel.app",  # Pattern for future deployments
     ]
 
