@@ -53,11 +53,11 @@ app.include_router(invoices.router, prefix="/api/v1")
 # CORS middleware with dynamic origin checking
 app.add_middleware(
     CORSMiddleware,
-    allow_origin_regex=r"https://celebrant-portal-.*\.vercel\.app",
+    allow_origin_regex=r"https://celebrant-portal-.*\.vercel\.app", # Dynamic regex
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"], # Explicit methods
     allow_headers=["*"],
-    expose_headers=["*"],
+    expose_headers=["*"], # Expose headers
 )
 
 # Disable TrustedHostMiddleware for development
