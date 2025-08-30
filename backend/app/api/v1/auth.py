@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from ...core.database import get_db
 from ...models import User, FailedLoginAttempt
-from ...schemas import UserCreate, User, Token
+from ...schemas import UserCreate, User as UserSchema, Token
 from ...core.auth import (
     authenticate_user,
     create_access_token,
@@ -80,7 +80,7 @@ async def test_auth():
     """Test endpoint to verify authentication is working."""
     return {"message": "Authentication endpoint is working", "timestamp": datetime.utcnow().isoformat()}
 
-@router.post("/register", response_model=User, status_code=status.HTTP_201_CREATED)
+@router.post("/register", response_model=UserSchema, status_code=status.HTTP_201_CREATED)
 async def register(
     user: UserCreate,
     db: Session = Depends(get_db)
