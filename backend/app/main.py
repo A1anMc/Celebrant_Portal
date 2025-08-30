@@ -45,50 +45,31 @@ app = FastAPI(
 )
 
 # Include API v1 routers
-try:
-    app.include_router(auth.router, prefix="/api/v1")
-    print("Auth router included successfully")
-except Exception as e:
-    print(f"Failed to include auth router: {e}")
-
-try:
-    app.include_router(couples.router, prefix="/api/v1")
-    print("Couples router included successfully")
-except Exception as e:
-    print(f"Failed to include couples router: {e}")
-
-try:
-    app.include_router(ceremonies.router, prefix="/api/v1")
-    print("Ceremonies router included successfully")
-except Exception as e:
-    print(f"Failed to include ceremonies router: {e}")
-
-try:
-    app.include_router(invoices.router, prefix="/api/v1")
-    print("Invoices router included successfully")
-except Exception as e:
-    print(f"Failed to include invoices router: {e}")
-
-try:
-    app.include_router(notes.router, prefix="/api/v1")
-    print("Notes router included successfully")
-except Exception as e:
-    print(f"Failed to include notes router: {e}")
+app.include_router(auth.router, prefix="/api/v1")
+app.include_router(couples.router, prefix="/api/v1")
+app.include_router(ceremonies.router, prefix="/api/v1")
+app.include_router(invoices.router, prefix="/api/v1")
+app.include_router(notes.router, prefix="/api/v1")
 
 # CORS middleware with comprehensive origin checking
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Temporary: allow all origins for debugging
-    allow_credentials=False,  # Disable credentials temporarily
+    allow_origins=[
+        "http://localhost:3000",  # Local development
+        "https://celebrant-portal-pozr6y67o-alans-projects-baf4c067.vercel.app"  # Current frontend
+    ],
+    allow_origin_regex=r"https://celebrant-portal-.*\.vercel\.app",  # All Vercel deployments
+    allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
 
-# Disable TrustedHostMiddleware for development
-# app.add_middleware(
-#     TrustedHostMiddleware, 
-#     allowed_hosts=settings.allowed_origins
-# )
+# Add TrustedHostMiddleware for production security
+app.add_middleware(
+    TrustedHostMiddleware, 
+    allowed_hosts=["*"]  # Allow all hosts for now, can be restricted later
+)
 
 app.add_middleware(
     SessionMiddleware, 
@@ -96,7 +77,7 @@ app.add_middleware(
 )
 
 # Add request logging middleware
-# app.add_middleware(RequestLogger)
+# app.add_middleware(RequestLogger)  # Uncomment when monitoring is restored
 
 class RateLimitMiddleware(BaseHTTPMiddleware):
     def __init__(

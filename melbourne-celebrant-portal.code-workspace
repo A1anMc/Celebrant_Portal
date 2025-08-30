@@ -1,0 +1,22 @@
+{
+  "folders": [
+    {
+      "name": "Melbourne Celebrant Portal",
+      "path": "."
+    }
+  ],
+  "settings": {
+    "typescript.preferences.includePackageJsonAutoImports": "on",
+    "typescript.suggest.autoImports": true,
+    "typescript.preferences.importModuleSpecifier": "relative",
+    "typescript.tsdk": "node_modules/typescript/lib"
+  },
+  "extensions": {
+    "recommendations": [
+      "ms-vscode.vscode-typescript-next",
+      "bradlc.vscode-tailwindcss",
+      "esbenp.prettier-vscode",
+      "ms-vscode.vscode-json"
+    ]
+  }
+}
