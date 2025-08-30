@@ -17,6 +17,9 @@ from .core.database import create_tables, engine, Base
 from .api.v1 import auth, couples, ceremonies, invoices
 from .core.monitoring import RequestLogger, HealthChecker, setup_logging
 
+# Import models so they are registered with SQLAlchemy Base
+from .models import User, Couple, Ceremony, Invoice, FailedLoginAttempt
+
 # Setup logging
 setup_logging(settings.log_level if hasattr(settings, 'log_level') else "INFO")
 
