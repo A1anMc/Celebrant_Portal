@@ -130,4 +130,23 @@ class Message(BaseModel):
     message: str
 
 class ErrorResponse(BaseModel):
-    detail: str 
+    detail: str
+
+# Note schemas
+class NoteBase(BaseModel):
+    content: str
+
+class NoteCreate(NoteBase):
+    pass
+
+class NoteUpdate(BaseModel):
+    content: Optional[str] = None
+
+class Note(NoteBase):
+    id: int
+    user_id: int
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True 
