@@ -16,6 +16,8 @@ from fastapi import Request, Response
 from fastapi.responses import JSONResponse
 import structlog
 from structlog.stdlib import LoggerFactory
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.responses import StreamingResponse
 
 # Configure structlog for structured logging
 structlog.configure(
