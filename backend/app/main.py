@@ -54,8 +54,8 @@ app.include_router(notes.router, prefix="/api/v1")
 # CORS middleware with comprehensive origin checking
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=get_allowed_origins(),  # Use the function from config
-    allow_origin_regex=r"https://celebrant-portal-.*\.vercel\.app", # Dynamic regex for Vercel
+    allow_origins=["http://localhost:3000"],  # Local development
+    allow_origin_regex=r"https://celebrant-portal-.*\.vercel\.app",  # All Vercel deployments
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allow_headers=["*"],
