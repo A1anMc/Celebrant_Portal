@@ -18,19 +18,27 @@ export const authenticatedFetch = async (url: string, options: RequestInit = {})
     ...options.headers,
   };
 
-  const response = await fetch(url, {
-    ...options,
-    headers,
-  });
+  try {
+    const response = await fetch(url, {
+      ...options,
+      headers,
+    });
 
-  if (response.status === 401) {
-    // Token is invalid, clear it and redirect to login
-    localStorage.removeItem('authToken');
-    window.location.href = '/login';
-    throw new Error('Unauthorized');
+    if (response.status === 401) {
+      // Token is invalid, clear it and redirect to login
+      localStorage.removeItem('authToken');
+      window.location.href = '/login';
+      throw new Error('Unauthorized - Please log in again');
+    }
+
+    return response;
+  } catch (error) {
+    if (error instanceof TypeError) {
+      // Network error
+      throw new Error('Network error - Please check your connection');
+    }
+    throw error;
   }
-
-  return response;
 };
 
 // Dashboard API calls

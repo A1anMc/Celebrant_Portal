@@ -15,6 +15,7 @@ interface User {
 interface AuthContextType {
   user: User | null;
   loading: boolean;
+  isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, fullName: string) => Promise<void>;
   logout: () => Promise<void>;
@@ -67,15 +68,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (response.ok) {
         const userData = await response.json();
         setUser(userData);
-      } else {
+      } else if (response.status === 401) {
         // Token is invalid, clear it
         localStorage.removeItem('authToken');
         setUser(null);
+      } else {
+        // Other error, but don't clear token yet
+        console.error('Auth check failed with status:', response.status);
       }
     } catch (error) {
       console.error('Auth check failed:', error);
-      localStorage.removeItem('authToken');
-      setUser(null);
+      // Only clear token on network errors, not on auth errors
+      if (error instanceof TypeError) {
+        localStorage.removeItem('authToken');
+        setUser(null);
+      }
     } finally {
       setLoading(false);
     }
@@ -168,6 +175,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const value: AuthContextType = {
     user,
     loading,
+    isAuthenticated: !!user,
     login,
     register,
     logout,

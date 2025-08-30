@@ -4,31 +4,36 @@ import React, { ReactNode } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
+import LoadingSpinner from './LoadingSpinner';
 
 interface ProtectedRouteProps {
   children: ReactNode;
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
-  const { user, loading } = useAuth();
+  const { user, loading, isAuthenticated } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    if (!loading && !user) {
+    if (!loading && !isAuthenticated) {
       router.push('/login');
     }
-  }, [user, loading, router]);
+  }, [isAuthenticated, loading, router]);
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900"></div>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <LoadingSpinner size="md" text="Loading..." />
       </div>
     );
   }
 
-  if (!user) {
-    return null;
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <LoadingSpinner size="md" text="Redirecting to login..." />
+      </div>
+    );
   }
 
   return <>{children}</>;

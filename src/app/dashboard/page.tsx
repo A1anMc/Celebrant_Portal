@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { fetchDashboardData, addNote } from '@/lib/api';
 import { unstable_noStore as noStore } from 'next/cache';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import LoadingSpinner from '@/components/LoadingSpinner';
 
 interface DashboardData {
   quickStats: {
@@ -28,31 +29,39 @@ interface DashboardData {
 export default function DashboardPage() {
   noStore();
   const router = useRouter();
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, isAuthenticated } = useAuth();
   const [data, setData] = useState<DashboardData | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [newNote, setNewNote] = useState('');
 
   useEffect(() => {
     async function loadDashboardData() {
+      if (!isAuthenticated) return;
+      
+      setIsLoading(true);
+      setError(null);
+      
       try {
         const dashboardData = await fetchDashboardData();
         setData(dashboardData);
       } catch (error) {
-        console.error('Error:', error);
+        console.error('Dashboard data fetch error:', error);
+        if (error instanceof Error) {
+          setError(error.message);
+        } else {
+          setError('Failed to load dashboard data');
+        }
       } finally {
         setIsLoading(false);
       }
     }
 
     // Only load dashboard data if user is authenticated and auth loading is complete
-    if (!authLoading && user) {
+    if (!authLoading && isAuthenticated) {
       loadDashboardData();
-    } else if (!authLoading && !user) {
-      // User is not authenticated, stop loading
-      setIsLoading(false);
     }
-  }, [authLoading, user]);
+  }, [authLoading, isAuthenticated]);
 
   const handleAddNote = async () => {
     if (!newNote.trim()) return;
@@ -65,12 +74,51 @@ export default function DashboardPage() {
       setData(dashboardData);
       setNewNote('');
     } catch (error) {
-      console.error('Error:', error);
+      console.error('Add note error:', error);
+      alert('Failed to add note. Please try again.');
     }
   };
 
-  if (authLoading || isLoading || !data) {
-    return <div>Loading...</div>;
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <LoadingSpinner size="md" text="Loading dashboard..." />
+      </div>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <LoadingSpinner size="md" text="Loading dashboard data..." />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center max-w-md mx-auto p-6">
+          <div className="text-red-500 text-6xl mb-4">⚠️</div>
+          <h2 className="text-xl font-semibold mb-2">Error Loading Dashboard</h2>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!data) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <LoadingSpinner size="md" text="Preparing dashboard..." />
+      </div>
+    );
   }
 
   return (
