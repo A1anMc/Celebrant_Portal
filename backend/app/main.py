@@ -45,11 +45,35 @@ app = FastAPI(
 )
 
 # Include API v1 routers
-app.include_router(auth.router, prefix="/api/v1")
-app.include_router(couples.router, prefix="/api/v1")
-app.include_router(ceremonies.router, prefix="/api/v1")
-app.include_router(invoices.router, prefix="/api/v1")
-app.include_router(notes.router, prefix="/api/v1")
+try:
+    app.include_router(auth.router, prefix="/api/v1")
+    print("Auth router included successfully")
+except Exception as e:
+    print(f"Failed to include auth router: {e}")
+
+try:
+    app.include_router(couples.router, prefix="/api/v1")
+    print("Couples router included successfully")
+except Exception as e:
+    print(f"Failed to include couples router: {e}")
+
+try:
+    app.include_router(ceremonies.router, prefix="/api/v1")
+    print("Ceremonies router included successfully")
+except Exception as e:
+    print(f"Failed to include ceremonies router: {e}")
+
+try:
+    app.include_router(invoices.router, prefix="/api/v1")
+    print("Invoices router included successfully")
+except Exception as e:
+    print(f"Failed to include invoices router: {e}")
+
+try:
+    app.include_router(notes.router, prefix="/api/v1")
+    print("Notes router included successfully")
+except Exception as e:
+    print(f"Failed to include notes router: {e}")
 
 # CORS middleware with comprehensive origin checking
 app.add_middleware(
