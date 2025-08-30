@@ -14,7 +14,7 @@ from datetime import datetime
 
 from .core.config import settings, get_allowed_origins, is_allowed_origin
 from .core.database import create_tables, engine, Base
-# from .api.v1 import auth, couples, ceremonies, invoices, notes
+from .api.v1 import auth, couples, ceremonies, invoices, notes
 from .core.monitoring import RequestLogger, HealthChecker, setup_logging
 
 # Import models so they are registered with SQLAlchemy Base
@@ -45,16 +45,19 @@ app = FastAPI(
 )
 
 # Include API v1 routers
-# app.include_router(auth.router, prefix="/api/v1")
-# app.include_router(couples.router, prefix="/api/v1")
-# app.include_router(ceremonies.router, prefix="/api/v1")
-# app.include_router(invoices.router, prefix="/api/v1")
-# app.include_router(notes.router, prefix="/api/v1")
+app.include_router(auth.router, prefix="/api/v1")
+app.include_router(couples.router, prefix="/api/v1")
+app.include_router(ceremonies.router, prefix="/api/v1")
+app.include_router(invoices.router, prefix="/api/v1")
+app.include_router(notes.router, prefix="/api/v1")
 
 # CORS middleware with comprehensive origin checking
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],  # Local development
+    allow_origins=[
+        "http://localhost:3000",  # Local development
+        "https://celebrant-portal-pozr6y67o-alans-projects-baf4c067.vercel.app"  # Current frontend
+    ],
     allow_origin_regex=r"https://celebrant-portal-.*\.vercel\.app",  # All Vercel deployments
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
