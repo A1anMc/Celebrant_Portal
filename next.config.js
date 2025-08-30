@@ -19,6 +19,20 @@ const nextConfig = {
       type: 'asset/resource'
     })
     return config
+  },
+  // Add CSP headers for Next.js
+  async headers() {
+    return [
+      {
+        source: '/(.*)',
+        headers: [
+          {
+            key: 'Content-Security-Policy',
+            value: "default-src 'self'; img-src 'self' data:; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; connect-src 'self' https://*.vercel.app https://*.onrender.com http://localhost:*"
+          }
+        ]
+      }
+    ]
   }
 }
 
