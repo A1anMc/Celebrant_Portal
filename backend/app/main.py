@@ -45,11 +45,11 @@ app = FastAPI(
 )
 
 # Include API v1 routers
-app.include_router(auth.router, prefix="/api/v1")
-app.include_router(couples.router, prefix="/api/v1")
-app.include_router(ceremonies.router, prefix="/api/v1")
-app.include_router(invoices.router, prefix="/api/v1")
-app.include_router(notes.router, prefix="/api/v1")
+# app.include_router(auth.router, prefix="/api/v1")
+# app.include_router(couples.router, prefix="/api/v1")
+# app.include_router(ceremonies.router, prefix="/api/v1")
+# app.include_router(invoices.router, prefix="/api/v1")
+# app.include_router(notes.router, prefix="/api/v1")
 
 # CORS middleware with comprehensive origin checking
 app.add_middleware(
