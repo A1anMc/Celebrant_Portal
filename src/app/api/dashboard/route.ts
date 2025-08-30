@@ -37,6 +37,14 @@ export async function GET(request: NextRequest) {
       }),
     ]);
 
+    // Check if any of the responses indicate authentication failure
+    if (couplesResponse.status === 401 || invoicesResponse.status === 401 || notesResponse.status === 401) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
     if (!couplesResponse.ok || !invoicesResponse.ok || !notesResponse.ok) {
       throw new Error('Failed to fetch dashboard data');
     }
