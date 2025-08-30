@@ -28,7 +28,7 @@ interface DashboardData {
 export default function DashboardPage() {
   noStore();
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [data, setData] = useState<DashboardData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [newNote, setNewNote] = useState('');
@@ -45,8 +45,14 @@ export default function DashboardPage() {
       }
     }
 
-    loadDashboardData();
-  }, []);
+    // Only load dashboard data if user is authenticated and auth loading is complete
+    if (!authLoading && user) {
+      loadDashboardData();
+    } else if (!authLoading && !user) {
+      // User is not authenticated, stop loading
+      setIsLoading(false);
+    }
+  }, [authLoading, user]);
 
   const handleAddNote = async () => {
     if (!newNote.trim()) return;
@@ -63,7 +69,7 @@ export default function DashboardPage() {
     }
   };
 
-  if (isLoading || !data) {
+  if (authLoading || isLoading || !data) {
     return <div>Loading...</div>;
   }
 
