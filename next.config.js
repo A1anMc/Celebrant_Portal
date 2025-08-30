@@ -19,21 +19,8 @@ const nextConfig = {
       type: 'asset/resource'
     })
     return config
-  },
-  // Add CSP headers for Next.js
-  async headers() {
-    return [
-      {
-        source: '/(.*)',
-        headers: [
-          {
-            key: 'Content-Security-Policy',
-            value: "default-src 'self'; img-src 'self' data:; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://*.vercel.app https://*.onrender.com http://localhost:*"
-          }
-        ]
-      }
-    ]
   }
+  // Removed CSP headers to fix eval blocking issue
 }
 
 module.exports = nextConfig 
