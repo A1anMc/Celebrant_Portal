@@ -15,9 +15,11 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    console.log('Dashboard API called with API_URL:', API_URL);
+
     // Fetch all required data in parallel
     const [couplesResponse, invoicesResponse, notesResponse] = await Promise.all([
-      fetch(`${API_URL}/api/v1/couples`, {
+      fetch(`${API_URL}/api/v1/couples/`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -29,7 +31,7 @@ export async function GET(request: NextRequest) {
           'Content-Type': 'application/json',
         },
       }),
-      fetch(`${API_URL}/api/v1/notes`, {
+      fetch(`${API_URL}/api/v1/notes/`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -37,7 +39,18 @@ export async function GET(request: NextRequest) {
       }),
     ]);
 
+    console.log('API Responses:', {
+      couples: couplesResponse.status,
+      invoices: invoicesResponse.status,
+      notes: notesResponse.status
+    });
+
     if (!couplesResponse.ok || !invoicesResponse.ok || !notesResponse.ok) {
+      console.error('API Response errors:', {
+        couples: await couplesResponse.text(),
+        invoices: await invoicesResponse.text(),
+        notes: await notesResponse.text()
+      });
       throw new Error('Failed to fetch dashboard data');
     }
 
