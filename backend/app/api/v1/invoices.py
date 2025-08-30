@@ -57,6 +57,8 @@ async def get_invoices(
     except DatabaseException as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
+
+
 @router.get("/{invoice_id}", response_model=InvoiceSchema)
 async def get_invoice(
     invoice_id: int,
