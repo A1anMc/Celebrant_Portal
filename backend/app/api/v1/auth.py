@@ -192,7 +192,7 @@ async def logout(
     # In a more complete implementation, you would add the token to a blacklist here
     return {"message": "Successfully logged out"}
 
-@router.get("/me", response_model=User)
+@router.get("/me", response_model=UserSchema)
 def read_users_me(current_user: User = Depends(get_current_active_user)):
     """Get current user information."""
     return current_user
