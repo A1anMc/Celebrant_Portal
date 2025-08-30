@@ -12,7 +12,7 @@ from typing import Callable
 import secrets
 from datetime import datetime
 
-from .core.config import settings, get_allowed_origins
+from .core.config import settings, get_allowed_origins, is_allowed_origin
 from .core.database import create_tables, engine, Base
 from .api.v1 import auth, couples, ceremonies, invoices
 from .core.monitoring import RequestLogger, HealthChecker, setup_logging
@@ -50,10 +50,10 @@ app.include_router(couples.router, prefix="/api/v1")
 app.include_router(ceremonies.router, prefix="/api/v1")
 app.include_router(invoices.router, prefix="/api/v1")
 
-# CORS middleware
+# CORS middleware with dynamic origin checking
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=get_allowed_origins(),
+    allow_origin_regex=r"https://celebrant-portal-.*\.vercel\.app",
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allow_headers=["*"],

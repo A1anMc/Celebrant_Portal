@@ -13,13 +13,32 @@ def get_allowed_origins() -> List[str]:
     if env_origins:
         return [origin.strip() for origin in env_origins.split(",") if origin.strip()]
     
-    # Fallback to defaults - include current Vercel domain
+    # Fallback to defaults - allow all Vercel deployments
     return [
         "http://localhost:3000",
         "https://celebrant-portal-ah8ssgciz-alans-projects-baf4c067.vercel.app",
         "https://celebrant-portal-g5rrxam67-alans-projects-baf4c067.vercel.app",
-        "https://*.vercel.app"  # Allow all Vercel subdomains
+        "https://celebrant-portal-do4tbzzmx-alans-projects-baf4c067.vercel.app",
+        "https://celebrant-portal-*.vercel.app",  # Pattern for future deployments
     ]
+
+def is_allowed_origin(origin: str) -> bool:
+    """Check if origin is allowed, including dynamic Vercel domains."""
+    allowed_origins = get_allowed_origins()
+    
+    # Check exact matches
+    if origin in allowed_origins:
+        return True
+    
+    # Check Vercel domain patterns
+    if origin.endswith('.vercel.app') and 'celebrant-portal-' in origin:
+        return True
+    
+    # Check localhost for development
+    if origin.startswith('http://localhost:') or origin.startswith('https://localhost:'):
+        return True
+    
+    return False
 
 class Settings(BaseSettings):
     # Database
