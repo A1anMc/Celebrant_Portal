@@ -51,14 +51,15 @@ app.include_router(ceremonies.router, prefix="/api/v1")
 app.include_router(invoices.router, prefix="/api/v1")
 app.include_router(notes.router, prefix="/api/v1")
 
-# CORS middleware with dynamic origin checking
+# CORS middleware with comprehensive origin checking
 app.add_middleware(
     CORSMiddleware,
-    allow_origin_regex=r"https://celebrant-portal-.*\.vercel\.app", # Dynamic regex
+    allow_origins=get_allowed_origins(),  # Use the function from config
+    allow_origin_regex=r"https://celebrant-portal-.*\.vercel\.app", # Dynamic regex for Vercel
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"], # Explicit methods
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allow_headers=["*"],
-    expose_headers=["*"], # Expose headers
+    expose_headers=["*"],
 )
 
 # Disable TrustedHostMiddleware for development
