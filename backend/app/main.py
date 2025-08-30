@@ -15,7 +15,7 @@ from datetime import datetime
 from .core.config import settings, get_allowed_origins, is_allowed_origin
 from .core.database import create_tables, engine, Base
 # from .api.v1 import auth, couples, ceremonies, invoices, notes
-from .core.monitoring import RequestLogger, HealthChecker, setup_logging
+# from .core.monitoring import RequestLogger, HealthChecker, setup_logging
 
 # Import models so they are registered with SQLAlchemy Base
 from .models import User, Couple, Ceremony, Invoice, FailedLoginAttempt
