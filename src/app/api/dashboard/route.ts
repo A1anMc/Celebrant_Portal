@@ -5,7 +5,9 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 export async function GET(request: NextRequest) {
   try {
-    const token = request.cookies.get('token')?.value;
+    const authHeader = request.headers.get('authorization');
+    const token = authHeader?.replace('Bearer ', '');
+    
     if (!token) {
       return NextResponse.json(
         { error: 'Unauthorized' },
@@ -15,19 +17,19 @@ export async function GET(request: NextRequest) {
 
     // Fetch all required data in parallel
     const [couplesResponse, invoicesResponse, notesResponse] = await Promise.all([
-      fetch(`${API_URL}/couples`, {
+      fetch(`${API_URL}/api/v1/couples`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
       }),
-      fetch(`${API_URL}/invoices/summary`, {
+      fetch(`${API_URL}/api/v1/invoices/summary`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
       }),
-      fetch(`${API_URL}/notes`, {
+      fetch(`${API_URL}/api/v1/notes`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',

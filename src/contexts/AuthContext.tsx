@@ -42,20 +42,39 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
+  // Helper function to get auth headers
+  const getAuthHeaders = () => {
+    const token = localStorage.getItem('authToken');
+    return {
+      'Content-Type': 'application/json',
+      ...(token && { 'Authorization': `Bearer ${token}` }),
+    };
+  };
+
   const checkAuth = useCallback(async () => {
     try {
+      const token = localStorage.getItem('authToken');
+      if (!token) {
+        setUser(null);
+        setLoading(false);
+        return;
+      }
+
       const response = await fetch(`${API_BASE_URL}/api/v1/auth/me`, {
-        credentials: 'include',
+        headers: getAuthHeaders(),
       });
 
       if (response.ok) {
         const userData = await response.json();
         setUser(userData);
       } else {
+        // Token is invalid, clear it
+        localStorage.removeItem('authToken');
         setUser(null);
       }
     } catch (error) {
       console.error('Auth check failed:', error);
+      localStorage.removeItem('authToken');
       setUser(null);
     } finally {
       setLoading(false);
@@ -69,7 +88,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         headers: {
           'Content-Type': 'application/json',
         },
-        credentials: 'include',
         body: JSON.stringify({ email, password }),
       });
 
@@ -79,8 +97,22 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
 
       const data = await response.json();
-      setUser(data.user);
-      router.push('/dashboard');
+      
+      // Store the JWT token
+      localStorage.setItem('authToken', data.access_token);
+      
+      // Get user info with the token
+      const userResponse = await fetch(`${API_BASE_URL}/api/v1/auth/me`, {
+        headers: getAuthHeaders(),
+      });
+
+      if (userResponse.ok) {
+        const userData = await userResponse.json();
+        setUser(userData);
+        router.push('/dashboard');
+      } else {
+        throw new Error('Failed to get user info');
+      }
     } catch (error) {
       console.error('Login error:', error);
       throw error;
@@ -103,7 +135,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
 
       const data = await response.json();
-      setUser(data.user);
+      setUser(data);
       router.push('/dashboard');
     } catch (error) {
       console.error('Registration error:', error);
@@ -113,13 +145,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const logout = async () => {
     try {
-      await fetch(`${API_BASE_URL}/api/v1/auth/logout`, {
-        method: 'POST',
-        credentials: 'include',
-      });
+      const token = localStorage.getItem('authToken');
+      if (token) {
+        await fetch(`${API_BASE_URL}/api/v1/auth/logout`, {
+          method: 'POST',
+          headers: getAuthHeaders(),
+        });
+      }
     } catch (error) {
       console.error('Logout error:', error);
     } finally {
+      localStorage.removeItem('authToken');
       setUser(null);
       router.push('/login');
     }

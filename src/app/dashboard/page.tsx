@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import { fetchDashboardData, addNote } from '@/lib/api';
 import { unstable_noStore as noStore } from 'next/cache';
 
 interface DashboardData {
@@ -32,11 +33,9 @@ export default function DashboardPage() {
   const [newNote, setNewNote] = useState('');
 
   useEffect(() => {
-    async function fetchDashboardData() {
+    async function loadDashboardData() {
       try {
-        const response = await fetch('/api/dashboard');
-        if (!response.ok) throw new Error('Failed to fetch dashboard data');
-        const dashboardData = await response.json();
+        const dashboardData = await fetchDashboardData();
         setData(dashboardData);
       } catch (error) {
         console.error('Error:', error);
@@ -45,26 +44,17 @@ export default function DashboardPage() {
       }
     }
 
-    fetchDashboardData();
+    loadDashboardData();
   }, []);
 
   const handleAddNote = async () => {
     if (!newNote.trim()) return;
 
     try {
-      const response = await fetch('/api/notes', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ content: newNote }),
-      });
-
-      if (!response.ok) throw new Error('Failed to add note');
+      await addNote(newNote);
       
       // Refresh dashboard data
-      const dashboardResponse = await fetch('/api/dashboard');
-      const dashboardData = await dashboardResponse.json();
+      const dashboardData = await fetchDashboardData();
       setData(dashboardData);
       setNewNote('');
     } catch (error) {
