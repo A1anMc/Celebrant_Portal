@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
           'Content-Type': 'application/json',
         },
       }),
-      fetch(`${API_URL}/api/v1/invoices/summary`, {
+      fetch(`${API_URL}/api/v1/invoices/stats`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
