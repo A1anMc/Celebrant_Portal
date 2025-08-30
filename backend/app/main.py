@@ -183,7 +183,20 @@ def read_root():
 @app.get("/test-auth")
 def test_auth_endpoint():
     """Test endpoint to check if auth router is working."""
-    return {"message": "Auth test endpoint working", "timestamp": datetime.now().isoformat()}
+    try:
+        # Test database connection
+        from .core.database import engine
+        with engine.connect() as conn:
+            result = conn.execute("SELECT 1")
+            db_status = "connected"
+    except Exception as e:
+        db_status = f"error: {str(e)}"
+    
+    return {
+        "message": "Auth test endpoint working", 
+        "timestamp": datetime.now().isoformat(),
+        "database": db_status
+    }
 
 @app.middleware("http")
 async def add_security_headers(request: Request, call_next):
