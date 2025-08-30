@@ -54,15 +54,10 @@ app = FastAPI(
 # CORS middleware with comprehensive origin checking
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",  # Local development
-        "https://celebrant-portal-pozr6y67o-alans-projects-baf4c067.vercel.app"  # Current frontend
-    ],
-    allow_origin_regex=r"https://celebrant-portal-.*\.vercel\.app",  # All Vercel deployments
-    allow_credentials=True,
+    allow_origins=["*"],  # Temporary: allow all origins for debugging
+    allow_credentials=False,  # Disable credentials temporarily
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allow_headers=["*"],
-    expose_headers=["*"],
 )
 
 # Disable TrustedHostMiddleware for development
@@ -196,7 +191,8 @@ async def add_security_headers(request: Request, call_next):
     response.headers["X-Frame-Options"] = "DENY"
     response.headers["X-XSS-Protection"] = "1; mode=block"
     response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
-    response.headers["Content-Security-Policy"] = "default-src 'self'; img-src 'self' data:; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; connect-src 'self' https://*.vercel.app https://*.onrender.com"
+    # Temporarily disable CSP for debugging
+    # response.headers["Content-Security-Policy"] = "default-src 'self'; img-src 'self' data:; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; connect-src 'self' https://*.vercel.app https://*.onrender.com"
     return response
 
 @app.exception_handler(CsrfProtectError)
