@@ -75,40 +75,52 @@ def clear_failed_attempts(db: Session, email: str):
     db.query(FailedLoginAttempt).filter(FailedLoginAttempt.email == email).delete()
     db.commit()
 
+@router.get("/test")
+async def test_auth():
+    """Test endpoint to verify authentication is working."""
+    return {"message": "Authentication endpoint is working", "timestamp": datetime.utcnow().isoformat()}
+
 @router.post("/register", response_model=User, status_code=status.HTTP_201_CREATED)
 async def register(
     user: UserCreate,
     db: Session = Depends(get_db)
 ):
     """Register a new user."""
-    # Validate password
-    if not validate_password(user.password):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Password does not meet security requirements"
+    try:
+        # Validate password
+        if not validate_password(user.password):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Password does not meet security requirements"
+            )
+        
+        # Check if user exists
+        from app.models import User as UserModel
+        db_user = db.query(UserModel).filter(UserModel.email == user.email).first()
+        if db_user:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Email already registered"
+            )
+        
+        # Create new user
+        hashed_password = get_password_hash(user.password)
+        db_user = UserModel(
+            email=user.email,
+            hashed_password=hashed_password,
+            full_name=user.full_name
         )
-    
-    # Check if user exists
-    from app.models import User as UserModel
-    db_user = db.query(UserModel).filter(UserModel.email == user.email).first()
-    if db_user:
+        db.add(db_user)
+        db.commit()
+        db.refresh(db_user)
+        
+        return db_user
+    except Exception as e:
+        db.rollback()
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Email already registered"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Registration failed: {str(e)}"
         )
-    
-    # Create new user
-    hashed_password = get_password_hash(user.password)
-    db_user = UserModel(
-        email=user.email,
-        hashed_password=hashed_password,
-        full_name=user.full_name
-    )
-    db.add(db_user)
-    db.commit()
-    db.refresh(db_user)
-    
-    return db_user
 
 @router.post("/login", response_model=Token)
 async def login(

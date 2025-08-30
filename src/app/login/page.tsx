@@ -8,8 +8,8 @@ import Link from 'next/link';
 
 export default function LoginPage() {
   noStore();
-  const [email, setEmail] = useState('demo@celebrant.com');
-  const [password, setPassword] = useState('demo123');
+  const [email, setEmail] = useState('demo@celebrant.com'); // Pre-filled
+  const [password, setPassword] = useState('Demo123!'); // Pre-filled with secure password
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -124,7 +124,7 @@ export default function LoginPage() {
             <h3 className="font-semibold text-blue-900 mb-2">Demo Credentials:</h3>
             <p className="text-sm text-blue-800">
               <strong>Email:</strong> demo@celebrant.com<br />
-              <strong>Password:</strong> demo123
+              <strong>Password:</strong> Demo123!
             </p>
           </div>
         </div>
