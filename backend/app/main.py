@@ -21,7 +21,7 @@ from .core.database import create_tables, engine, Base
 from .models import User, Couple, Ceremony, Invoice, FailedLoginAttempt
 
 # Setup logging
-setup_logging(settings.log_level if hasattr(settings, 'log_level') else "INFO")
+# setup_logging(settings.log_level if hasattr(settings, 'log_level') else "INFO")
 
 # Database initialization (migrations should be run separately)
 # For development, we can create tables, but in production use migrations
@@ -72,7 +72,7 @@ app.add_middleware(
 )
 
 # Add request logging middleware
-app.add_middleware(RequestLogger)
+# app.add_middleware(RequestLogger)
 
 class RateLimitMiddleware(BaseHTTPMiddleware):
     def __init__(
