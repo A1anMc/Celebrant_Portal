@@ -177,6 +177,11 @@ def read_root():
         "docs_url": "/docs" if settings.debug else "Documentation disabled in production"
     }
 
+@app.get("/test-auth")
+def test_auth_endpoint():
+    """Test endpoint to check if auth router is working."""
+    return {"message": "Auth test endpoint working", "timestamp": datetime.now().isoformat()}
+
 @app.middleware("http")
 async def add_security_headers(request: Request, call_next):
     response = await call_next(request)
