@@ -1,7 +1,8 @@
 from datetime import timedelta, datetime
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Body
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
+from pydantic import BaseModel
 from ...core.database import get_db
 from ...models import User, FailedLoginAttempt
 from ...schemas import UserCreate, User, Token
@@ -20,6 +21,10 @@ from fastapi_csrf_protect import CsrfProtect
 from fastapi_csrf_protect.exceptions import CsrfProtectError
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
+
+class LoginRequest(BaseModel):
+    email: str
+    password: str
 
 def validate_password(password: str) -> bool:
     """Validate password against security policy."""
@@ -107,12 +112,12 @@ async def register(
 
 @router.post("/login", response_model=Token)
 async def login(
-    form_data: OAuth2PasswordRequestForm = Depends(),
+    login_data: LoginRequest = Body(...),
     db: Session = Depends(get_db)
 ):
     """Login user and return access token."""
     # Check for account lockout
-    lockout_time = check_account_lockout(db, form_data.username)
+    lockout_time = check_account_lockout(db, login_data.email)
     if lockout_time:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -121,16 +126,16 @@ async def login(
     
     # Authenticate user
     from app.models import User as UserModel
-    user = db.query(UserModel).filter(UserModel.email == form_data.username).first()
-    if not user or not verify_password(form_data.password, user.hashed_password):
-        record_failed_attempt(db, form_data.username)
+    user = db.query(UserModel).filter(UserModel.email == login_data.email).first()
+    if not user or not verify_password(login_data.password, user.hashed_password):
+        record_failed_attempt(db, login_data.email)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password"
         )
     
     # Clear failed attempts on successful login
-    clear_failed_attempts(db, form_data.username)
+    clear_failed_attempts(db, login_data.email)
     
     # Generate access token
     access_token = create_access_token(

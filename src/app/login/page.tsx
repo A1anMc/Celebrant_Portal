@@ -8,8 +8,8 @@ import Link from 'next/link';
 
 export default function LoginPage() {
   noStore();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState('demo@celebrant.com');
+  const [password, setPassword] = useState('demo123');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -23,7 +23,15 @@ export default function LoginPage() {
     try {
       await login(email, password);
     } catch (err: any) {
-      setError(err.message || 'Login failed');
+      console.error('Login error details:', err);
+      if (err.response) {
+        const errorData = await err.response.json();
+        setError(errorData.detail || 'Login failed');
+      } else if (err.message) {
+        setError(err.message);
+      } else {
+        setError('Login failed. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
@@ -57,6 +65,7 @@ export default function LoginPage() {
                   className="input-field pl-10"
                   placeholder="your@email.com"
                   required
+                  autoComplete="email"
                 />
               </div>
             </div>
@@ -75,6 +84,7 @@ export default function LoginPage() {
                   className="input-field pl-10 pr-10"
                   placeholder="Enter your password"
                   required
+                  autoComplete="current-password"
                 />
                 <button
                   type="button"
@@ -99,22 +109,22 @@ export default function LoginPage() {
             >
               {loading ? 'Signing in...' : 'Sign In'}
             </button>
+
+            <div className="text-center">
+              <p className="text-sm text-secondary-600">
+                Don't have an account?{' '}
+                <Link href="/register" className="text-primary-600 hover:text-primary-700 font-medium">
+                  Sign up
+                </Link>
+              </p>
+            </div>
           </form>
 
-          <div className="mt-6 text-center">
-            <p className="text-secondary-600">
-              Don&apos;t have an account?{' '}
-              <Link href="/register" className="text-primary-600 hover:text-primary-700 font-medium">
-                Sign up
-              </Link>
-            </p>
-          </div>
-
-          <div className="mt-8 p-4 bg-primary-50 rounded-lg border border-primary-200">
-            <h3 className="font-medium text-secondary-800 mb-2">Demo Credentials:</h3>
-            <p className="text-sm text-secondary-600">
-              Email: demo@celebrant.com<br />
-              Password: demo123
+          <div className="mt-8 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <h3 className="font-semibold text-blue-900 mb-2">Demo Credentials:</h3>
+            <p className="text-sm text-blue-800">
+              <strong>Email:</strong> demo@celebrant.com<br />
+              <strong>Password:</strong> demo123
             </p>
           </div>
         </div>
