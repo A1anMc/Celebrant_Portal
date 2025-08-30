@@ -204,4 +204,4 @@ async def global_exception_handler(request, exc):
     return JSONResponse(
         status_code=500,
         content={"detail": "Internal server error"}
-    ) # Force redeploy Sat Aug 30 19:00:52 AEST 2025
+    ) # Force redeploy Sat Aug 30 19:30:00 AEST 2025
